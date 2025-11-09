@@ -222,7 +222,7 @@ class DevicePage:
         self.page.update()
 
     def select_device(self, device_name):
-        """انتخاب دستگاه"""
+        """انتخاب دستگاه و انتقال به صفحه بخش‌ها"""
         self.selected_device = device_name
         form_data = self.page.session.get("form_data") or {}
         form_data['device'] = device_name
@@ -234,8 +234,15 @@ class DevicePage:
         self.page.update()
         
         print("Updated form data:", form_data)
-        # اینجا می‌توانید به صفحه بعدی بروید
+        
+        # انتقال خودکار به صفحه بخش‌های دستگاه
+        self.go_to_device_sections()
 
+    def go_to_device_sections(self):
+        """انتقال به صفحه بخش‌های دستگاه"""
+        from device_section_page import DeviceSectionPage
+        section_page = DeviceSectionPage(self.page)
+        section_page.show()
     def go_back(self, e):
         """بازگشت به صفحه فرم"""
         from information_page import InformationPage
