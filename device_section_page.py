@@ -197,56 +197,101 @@ class DeviceSectionPage:
         device_page.show()
 
     def save_all_data(self, e):
-        """ذخیره تمام داده‌ها"""
+        """ذخیره تمام داده‌ها در Excel و بازگشت به صفحه اصلی"""
         form_data = self.page.session.get("form_data") or {}
-        
-        # ذخیره کامنت
+    
+    # ذخیره کامنت
         comment_field = self.find_comment_field()
         if comment_field:
             form_data['comment'] = comment_field.value
-        
-        # فرمت زمان
+    
+    # فرمت زمان
         if 'time' in form_data:
             time_str = form_data['time']
             if ":" in time_str:
                 form_data['time'] = time_str.split(":")[0]
             print(f"🕒 Final time: {form_data['time']}")
-        
-        # ذخیره در session
+    
+    # ذخیره در session
         self.page.session.set("form_data", form_data)
+    
+    # استفاده از ExcelHandler برای ذخیره در اکسل
+        try:
+            from excel_handler import ExcelHandler
+            excel_handler = ExcelHandler()
+            success = excel_handler.save_form_data(form_data)
         
-        # اینجا می‌توانید داده‌ها را به Excel ذخیره کنید
-        success = self.save_to_excel(form_data)
-        
-        if success:
-            snack_bar = ft.SnackBar(ft.Text("✅ All data saved successfully!"))
-            self.page.overlay.append(snack_bar)
-            snack_bar.open = True
+            if success:
+                self.show_success_and_return_to_main()
+            else:
+                self.show_error("❌ خطا در ذخیره داده‌ها در اکسل!")
             
-            # بازگشت به صفحه اصلی
-            from information_page import InformationPage
-            information_page = InformationPage(self.page)
-            information_page.show()
-        else:
-            snack_bar = ft.SnackBar(ft.Text("❌ Error saving data!"))
-            self.page.overlay.append(snack_bar)
-            snack_bar.open = True
+        except ImportError as e:
+            print(f"Error importing ExcelHandler: {e}")
+            self.show_error(f"❌ خطا در بارگذاری ماژول Excel: {e}")
+        except Exception as e:
+            print(f"Error in Excel save: {e}")
+            self.show_error(f"❌ خطا در ذخیره‌سازی: {str(e)}")
+
+    def show_success_and_return_to_main(self):
+        """نمایش پیام موفقیت و بازگشت به صفحه اصلی"""
+        # پاک کردن صفحه و نمایش پیام موفقیت
+        self.page.controls.clear()
+        
+        success_layout = ft.Column(
+            controls=[
+                ft.Icon(ft.Icons.CHECK_CIRCLE, size=80, color=ft.Colors.GREEN),
+                ft.Text("✅ موفقیت!", size=24, weight=ft.FontWeight.BOLD, color=ft.Colors.GREEN),
+                ft.Text("تمام داده‌ها با موفقیت در اکسل ذخیره شدند!", 
+                    size=16, color=self.TEXT_COLOR, text_align=ft.TextAlign.CENTER),
+                ft.ProgressRing(width=30, height=30, color=ft.Colors.BLUE_400),
+                ft.Text("در حال بازگشت به صفحه اصلی...", size=14, color=ft.Colors.GREY_400),
+            ],
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            spacing=20
+        )
+        
+        self.page.add(success_layout)
+        self.page.update()
+        
+        # بازگشت به صفحه اصلی پس از تأخیر کوتاه
+        import threading
+        import time
+        
+        def navigate_to_main():
+            time.sleep(2)  # تأخیر 2 ثانیه برای دیدن پیام موفقیت
+            self.page.run_thread(self.go_to_main_page)
+        
+        thread = threading.Thread(target=navigate_to_main)
+        thread.daemon = True
+        thread.start()
+
+    def go_to_main_page(self):
+        """بازگشت به صفحه اصلی"""
+        from information_page import InformationPage
+        information_page = InformationPage(self.page)
+        information_page.show()
+
+    def show_error(self, message):
+        """نمایش خطا"""
+        snack_bar = ft.SnackBar(
+            ft.Text(message, color=ft.Colors.WHITE),
+            bgcolor=ft.Colors.RED_400
+        )
+        self.page.overlay.append(snack_bar)
+        snack_bar.open = True
+        self.page.update()
 
     def find_comment_field(self):
-        """پیدا کردن فیلد کامنت در کنترل‌های صفحه"""
-        for control in self.page.controls[0].controls:  # فرض می‌کنیم layout اصلی Column است
-            if hasattr(control, 'content') and hasattr(control.content, 'controls'):
-                for sub_control in control.content.controls:
-                    if isinstance(sub_control, ft.TextField) and sub_control.hint_text == "Enter any additional comments or notes...":
-                        return sub_control
-        return None
-
-    def save_to_excel(self, form_data):
-        """ذخیره داده‌ها در Excel"""
+        """پیدا کردن فیلد کامنت"""
+        # اگر فیلد کامنت در صفحه دارید، اینجا آن را پیدا کنید
+        # مثال ساده:
         try:
-            # اینجا کد ذخیره در Excel را قرار دهید
-            print("📊 Saving to Excel:", form_data)
-            return True
-        except Exception as e:
-            print("❌ Error saving to Excel:", e)
-            return False
+            for control in self.page.controls:
+                if hasattr(control, 'controls'):
+                    for child in control.controls:
+                        if isinstance(child, ft.TextField) and 'comment' in getattr(child, 'hint_text', '').lower():
+                            return child
+        except:
+            pass
+        return None

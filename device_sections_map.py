@@ -83,7 +83,7 @@ device_sections_map = {
             }
         }
     },
-    'Battery': {
+    'Battery ': {
         'Set1': {
             'numeric_fields': {
                 'Battery voltage -set1': {'unit': 'V', 'range': ()},

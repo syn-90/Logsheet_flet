@@ -4,8 +4,7 @@ import sys
 from datetime import datetime
 import openpyxl
 from openpyxl.utils import get_column_letter
-from kivy.utils import platform
-# کلاس ExcelHandler بهینه‌شده
+
 class ExcelHandler:
     def __init__(self, template_file='LOG SHEET 1.xlsx', save_dir='logs'):
         import sys, os
@@ -20,16 +19,8 @@ class ExcelHandler:
         self.template_file = os.path.join(base_path, template_file)
 
         # بقیه‌ی کد تو بدون تغییر
-        if platform == 'android':
-            try:
-                from jnius import autoclass
-                PythonActivity = autoclass('org.kivy.android.PythonActivity')
-                external_files_dir = PythonActivity.mActivity.getExternalFilesDir(None).getAbsolutePath()
-                base_dir = external_files_dir
-            except Exception:
-                base_dir = os.path.join(os.path.expanduser('~'), 'logs')
-        else:
-            base_dir = os.path.join(os.path.expanduser('~'), 'Desktop')
+    
+        base_dir = os.path.join(os.path.expanduser('~'), 'Desktop')
 
         if save_dir:
             self.save_dir = save_dir
@@ -143,7 +134,7 @@ class ExcelHandler:
                 
                 print(f"✅ بخش {section_name} در سطر {section_position['section_row']}, ستون {section_position['section_col']} پیدا شد")
                 
-                # پیدا کردن ستون فielدها برای این بخش
+                # پیدا کردن ستون فیلدها برای این بخش
                 field_column = self._find_field_column_near_section(ws, section_position)
                 if not field_column:
                     print(f"⚠ ستون فیلدها برای بخش {section_name} یافت نشد")
@@ -172,16 +163,13 @@ class ExcelHandler:
                     else:
                         print(f"    ❌ سطر برای فیلد {field_name} یافت نشد")
             
-            # print("💾 ذخیره فایل اکسل...")
-            # wb.save(output_path)
-                        # ذخیره‌ی کامنت در پایان شیت
+            # ذخیره‌ی کامنت در پایان شیت
             comment_text = form_data.get('comment', None)
             if comment_text:
                 last_row = ws.max_row + 2  # دو سطر فاصله برای زیبایی
                 ws.cell(row=last_row, column=1).value = "Comment:"
                 ws.cell(row=last_row, column=2).value = comment_text
                 print(f"📝 کامنت ذخیره شد در سطر {last_row}: {comment_text}")
-
 
             wb.save(output_path)
             print(f"✅ داده‌ها با موفقیت در {output_path} ذخیره شدند")
@@ -220,6 +208,7 @@ class ExcelHandler:
         else:
             print(f"❌ فایل برای تاریخ {date_str} یافت نشد")
             return output_path, False
+
     def get_worksheet(self, wb, device_name):
         """پیدا کردن شیت با تطبیق انعطاف‌پذیر نام"""
         try:
@@ -249,7 +238,6 @@ class ExcelHandler:
 
 
     def _get_merged_cell_value(self, worksheet, row, col):
-            
         for mr in worksheet.merged_cells.ranges:
             if mr.min_row <= row <= mr.max_row and mr.min_col <= col <= mr.max_col:
                 return worksheet.cell(row=mr.min_row, column=mr.min_col).value
@@ -354,7 +342,8 @@ class ExcelHandler:
             
         except Exception as e:
             print(f"❌ خطا در پیدا کردن ستون فیلدها: {e}")
-            return None    
+            return None
+
     def debug_all_columns(self, worksheet, max_rows=20, max_cols=10):
         """دیباگ تمام ستون‌های مهم"""
         print("🔍 دیباگ تمام ستون‌های مهم:")
@@ -370,9 +359,6 @@ class ExcelHandler:
                     has_data = True
             
             if not has_data:
-    
-    
-    
                 print("   (بدون داده)")
 
     def map_field_name(self, field_name):
@@ -396,7 +382,8 @@ class ExcelHandler:
         }
         
         lower_field = field_name.lower()
-        return field_mapping.get(lower_field, field_name)  
+        return field_mapping.get(lower_field, field_name)
+
     def _find_field_row(self, worksheet, field_name):
         """پیدا کردن سطر مربوط به یک فیلد خاص"""
         try:
@@ -415,8 +402,9 @@ class ExcelHandler:
             return None
             
         except Exception as e:
-            print(f"❌ خطا در پیدا کردن سطر فیل드: {e}")
+            print(f"❌ خطا در پیدا کردن سطر فیلد: {e}")
             return None
+
     def debug_time_row(self, worksheet):
         """برای دیباگ کردن سطر اول (زمان‌ها)"""
         print("🔍 دیباگ سطر اول (زمان‌ها):")
@@ -436,7 +424,7 @@ class ExcelHandler:
         for col in range(1, worksheet.max_column + 1):
             cell_value = worksheet.cell(row=time_row, column=col).value
             print(f"ستون {col} ({get_column_letter(col)}): '{cell_value}'")
-    
+
     def _find_time_column(self, worksheet, time_value):
         try:
             # تبدیل زمان به عدد (مثلاً "04:00" به 4)
@@ -470,7 +458,6 @@ class ExcelHandler:
             print(f"❌ خطا در پیدا کردن ستون زمان: {e}")
             return None
 
-
     def find_field_column(self, worksheet):
         """پیدا کردن ستونی که شامل فیلدها است"""
         try:
@@ -497,10 +484,8 @@ class ExcelHandler:
             
         except Exception as e:
             print(f"❌ خطا در پیدا کردن ستون فیلدها: {e}")
-    
             return None
-    
-            
+
     def _find_field_row(self, worksheet, field_name, field_column=None):
         """پیدا کردن سطر مربوط به یک فیلد خاص"""
         try:
@@ -534,9 +519,6 @@ class ExcelHandler:
         except Exception as e:
             print(f"❌ خطا در پیدا کردن سطر فیلد: {e}")
             return None, field_column
-    
-
-
 
     def _find_sections_for_device(self, worksheet, device_row, device_col):
         """پیدا کردن تمام بخش‌های یک دستگاه"""
@@ -574,11 +556,8 @@ class ExcelHandler:
             
         except Exception as e:
             print(f"❌ خطا در پیدا کردن بخش‌ها: {e}")
-    
-    
-    
             return []
-        
+
     def _find_device_position(self, worksheet, device_name):
         """پیدا کردن موقعیت دستگاه در شیت"""
         try:
@@ -623,6 +602,7 @@ class ExcelHandler:
         except Exception as e:
             print(f"❌ خطا در پیدا کردن ساختار دستگاه: {e}")
             return None
+
     def _save_operator_info(self, worksheet, form_data):
         """ذخیره اطلاعات اپراتورها در اکسل"""
         try:
@@ -653,7 +633,7 @@ class ExcelHandler:
                 
         except Exception as e:
             print(f"⚠ خطا در ذخیره اطلاعات اپراتورها: {e}")
-    
+
     def _check_field_status(self, device, section_name, field_name, field_value):
         """بررسی اینکه مقدار فیلد در محدوده مجاز است یا نه"""
         try:
