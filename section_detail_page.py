@@ -1,348 +1,258 @@
+
 import flet as ft
 from device_sections_map import device_sections_map
 
-class SectionDetailPage:
+
+class SectionDetailPage(ft.View):
     def __init__(self, page: ft.Page):
         self.page = page
+        super().__init__(
+            route="/section_detail",
+            controls=[],
+            bgcolor=ft.Colors.BLACK,
+            scroll=ft.ScrollMode.AUTO,
+            padding=20
+        )
         self.TEXT_COLOR = ft.Colors.WHITE
         self.SKY_BLUE = ft.Colors.BLUE_400
         self.current_field_index = 0
         self.fields_data = []
-        self.section_data = {}
+        self.section_name = None
+        self.device_name = None
 
-    def show(self):
-        """نمایش صفحه جزئیات بخش با صفحه‌بندی"""
-        self.page.controls.clear()
-        
-        # دریافت داده‌ها از session
+    def did_mount(self):
         form_data = self.page.session.get("form_data") or {}
         self.device_name = form_data.get('device', 'Unknown Device')
         self.section_name = form_data.get('selected_section', 'Unknown Section')
-        
-        # اطلاعات بخش
+
         section_info = device_sections_map.get(self.device_name, {}).get(self.section_name, {})
-        
-        # آماده‌سازی لیست فیلدها
+        if not section_info:
+            self.show_error("Section data not found!")
+            return
+
         self.prepare_fields_list(section_info)
-        
-        # نمایش اولین فیلد
         self.show_current_field()
 
     def prepare_fields_list(self, section_info):
-        """آماده‌سازی لیست فیلدها"""
         self.fields_data = []
-        
-        # فیلدهای عددی
-        numeric_fields = section_info.get('numeric_fields', {})
-        for field_name, field_data in numeric_fields.items():
+        for fname, fdata in section_info.get('numeric_fields', {}).items():
+            rng = fdata.get('range', (None, None))
             self.fields_data.append({
                 'type': 'numeric',
-                'name': field_name,
-                'unit': field_data.get('unit', ''),
-                'range': field_data.get('range', None),
+                'name': fname,
+                'unit': fdata.get('unit', ''),
+                'min': rng[0] if len(rng) == 2 else None,
+                'max': rng[1] if len(rng) == 2 else None,
                 'value': None
             })
-        
-        # فیلدهای گزینه‌ای
-        option_fields = section_info.get('option_fields', {})
-        for field_name, field_data in option_fields.items():
+
+        for fname, fdata in section_info.get('option_fields', {}).items():
+            normal = fdata.get('normal') or (fdata.get('options')[0] if fdata.get('options') else '')
             self.fields_data.append({
                 'type': 'option',
-                'name': field_name,
-                'options': field_data.get('options', []),
-                'normal_option': field_data.get('normal', ''),
+                'name': fname,
+                'options': fdata.get('options', []),
+                'normal_option': normal,
                 'value': None
             })
 
     def show_current_field(self):
-        """نمایش فیلد فعلی"""
         if self.current_field_index >= len(self.fields_data):
             self.save_all_data()
             return
-        
-        current_field = self.fields_data[self.current_field_index]
-        
-        # پاک کردن صفحه
-        self.page.controls.clear()
-        
-        # ایجاد رابط کاربری برای فیلد فعلی
-        self.create_field_ui(current_field)
+
+        self.controls.clear()
+        current = self.fields_data[self.current_field_index]
+        self.create_field_ui(current)
 
     def create_field_ui(self, field):
-        """ایجاد رابط کاربری برای فیلد فعلی"""
-        # عنوان
         title = ft.Text(
-            f"📊 {self.device_name} - {self.section_name}",
-            size=20,
+            f"{self.device_name} → {self.section_name}",
+            size=22,
             weight=ft.FontWeight.BOLD,
             color=self.SKY_BLUE
         )
-        
-        # پیشرفت
+
         progress_text = ft.Text(
             f"Field {self.current_field_index + 1} of {len(self.fields_data)}",
-            size=14,
+            size=15,
             color=ft.Colors.GREY_400
         )
-        
-        # نوار پیشرفت
         progress_bar = ft.ProgressBar(
-            value=(self.current_field_index) / len(self.fields_data),
-            width=400,
-            color=self.SKY_BLUE
+            value=(self.current_field_index + 1) / len(self.fields_data),
+            width=500,
+            color=self.SKY_BLUE,
+            bgcolor=ft.Colors.WHITE10
         )
-        
-        # فیلد اصلی
-        field_control = self.create_field_control(field)
-        
-        # دکمه‌های ناوبری
-        nav_buttons = self.create_navigation_buttons()
-        
-        # چیدمان اصلی
-        main_layout = ft.Column(
-            controls=[
-                title,
-                progress_text,
-                progress_bar,
-                ft.Divider(height=30),
-                field_control,
-                ft.Divider(height=30),
-                nav_buttons
-            ],
-            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-            scroll=ft.ScrollMode.AUTO
-        )
-        
-        self.page.add(main_layout)
+
+        # نمایش رنج مجاز (همیشه)
+        range_hint = ""
+        if field['type'] == 'numeric' and field['min'] is not None and field['max'] is not None:
+            range_hint = f"Normal range: {field['min']} – {field['max']} {field['unit']}"
+
+        range_display = ft.Text(range_hint, color=ft.Colors.CYAN_300, size=14, italic=True)
+
+        if field['type'] == 'numeric':
+            self.numeric_input = ft.TextField(
+                label=field['name'],
+                hint_text=range_hint or "Enter value...",
+                keyboard_type=ft.KeyboardType.NUMBER,
+                border_color=self.SKY_BLUE,
+                bgcolor=ft.Colors.WHITE10,
+                color=self.TEXT_COLOR,
+                width=350,
+                text_size=22,
+                text_align=ft.TextAlign.CENTER,
+                on_change=self.on_numeric_change  # مهم: برای چک لحظه‌ای
+            )
+            self.validation_error = ft.Text("", size=16)  # خالی در ابتدا
+
+            field_control = ft.Column([
+                ft.Text(field['name'], size=20, weight=ft.FontWeight.BOLD, color=self.TEXT_COLOR),
+                range_display,
+                ft.Divider(height=8),
+                self.numeric_input,
+                self.validation_error
+            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=10)
+
+        else:
+            normal = field.get('normal_option', '')
+            normal_text = f"Normal value: {normal}" if normal else ""
+            normal_display = ft.Text(normal_text, color=ft.Colors.GREEN_400, size=14, italic=True)
+
+            self.radio_group = ft.RadioGroup(
+                content=ft.Column([
+                    ft.Radio(value=opt, label=opt, label_style=ft.TextStyle(color=self.TEXT_COLOR))
+                    for opt in field['options']
+                ]),
+                on_change=self.on_option_change  # چک لحظه‌ای
+            )
+            self.option_warning = ft.Text("", size=15)
+
+            field_control = ft.Column([
+                ft.Text(field['name'], size=20, weight=ft.FontWeight.BOLD, color=self.TEXT_COLOR),
+                normal_display,
+                ft.Divider(height=8),
+                self.radio_group,
+                self.option_warning
+            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=10)
+
+        is_last = self.current_field_index == len(self.fields_data) - 1
+        nav = ft.Row([
+            ft.ElevatedButton(
+                "Back to Sections" if self.current_field_index == 0 else "Previous",
+                on_click=self.go_to_previous_field,
+                bgcolor=ft.Colors.RED_400,
+                color=ft.Colors.WHITE,
+                width=180
+            ),
+            ft.ElevatedButton(
+                "Finish & Save" if is_last else "Next",
+                on_click=self.save_and_continue,
+                bgcolor=ft.Colors.GREEN_500 if is_last else self.SKY_BLUE,
+                color=ft.Colors.WHITE,
+                width=180,
+                icon=ft.Icons.CHECK_CIRCLE if is_last else ft.Icons.ARROW_FORWARD
+            )
+        ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
+
+        self.controls = [
+            title,
+            progress_text,
+            progress_bar,
+            ft.Divider(height=30),
+            field_control,
+            ft.Divider(height=30),
+            nav
+        ]
         self.page.update()
 
-    def create_field_control(self, field):
-        """ایجاد کنترل فیلد بر اساس نوع"""
-        if field['type'] == 'numeric':
-            return self.create_numeric_field_control(field)
-        else:
-            return self.create_option_field_control(field)
+    # چک لحظه‌ای برای عددی
+    def on_numeric_change(self, e):
+        value_text = e.control.value.strip()
+        field = self.fields_data[self.current_field_index]
 
-    def create_numeric_field_control(self, field):
-        """ایجاد کنترل فیلد عددی"""
-        field_name = field['name']
-        unit = field['unit']
-        value_range = field['range']
-        
-        # عنوان فیلد
-        field_title = ft.Text(
-            f"{field_name} ({unit})",
-            size=24,
-            weight=ft.FontWeight.BOLD,
-            color=self.TEXT_COLOR,
-            text_align=ft.TextAlign.CENTER
-        )
-        
-        # فیلد ورودی
-        self.numeric_input = ft.TextField(
-            label=f"Enter value in {unit}",
-            keyboard_type=ft.KeyboardType.NUMBER,
-            border_color=self.SKY_BLUE,
-            bgcolor=ft.Colors.WHITE10,
-            color=self.TEXT_COLOR,
-            width=300,
-            text_size=20,
-            text_align=ft.TextAlign.CENTER,
-            on_change=lambda e: self.validate_numeric_input(e, field)
-        )
-        
-        # نمایش رنج نرمال
-        range_info = ft.Text(
-            f"Normal range: {value_range[0]} - {value_range[1]} {unit}" if value_range and len(value_range) == 2 else "No range specified",
-            size=14,
-            color=ft.Colors.GREY_400,
-            text_align=ft.TextAlign.CENTER
-        )
-        
-        # خطای اعتبارسنجی
-        self.validation_error = ft.Text(
-            "",
-            size=16,
-            color=ft.Colors.RED,
-            text_align=ft.TextAlign.CENTER
-        )
-        
-        return ft.Column([
-            field_title,
-            ft.Divider(height=20),
-            self.numeric_input,
-            ft.Divider(height=10),
-            range_info,
-            self.validation_error
-        ], horizontal_alignment=ft.CrossAxisAlignment.CENTER)
-
-    def create_option_field_control(self, field):
-        """ایجاد کنترل فیلد گزینه‌ای"""
-        field_name = field['name']
-        options = field['options']
-        normal_option = field['normal_option']
-        
-        # عنوان فیلد
-        field_title = ft.Text(
-            field_name,
-            size=24,
-            weight=ft.FontWeight.BOLD,
-            color=self.TEXT_COLOR,
-            text_align=ft.TextAlign.CENTER
-        )
-        
-        # گروه رادیو
-        self.radio_group = ft.RadioGroup(
-            content=ft.Column([
-                ft.Radio(
-                    value=opt,
-                    label=opt,
-                    label_style=ft.TextStyle(color=self.TEXT_COLOR, size=16)
-                ) for opt in options
-            ]),
-            on_change=lambda e: self.validate_option_input(e, field)
-        )
-        
-        # نمایش گزینه نرمال
-        normal_info = ft.Text(
-            f"Normal option: {normal_option}",
-            size=14,
-            color=ft.Colors.GREY_400,
-            text_align=ft.TextAlign.CENTER
-        )
-        
-        # هشدار
-        self.option_warning = ft.Text(
-            "",
-            size=16,
-            color=ft.Colors.ORANGE,
-            text_align=ft.TextAlign.CENTER
-        )
-        
-        return ft.Column([
-            field_title,
-            ft.Divider(height=20),
-            self.radio_group,
-            ft.Divider(height=10),
-            normal_info,
-            self.option_warning
-        ], horizontal_alignment=ft.CrossAxisAlignment.CENTER)
-
-    def create_navigation_buttons(self):
-        """ایجاد دکمه‌های ناوبری"""
-        is_last_field = self.current_field_index == len(self.fields_data) - 1
-        is_first_field = self.current_field_index == 0
-        
-        # متن دکمه Previous بر اساس موقعیت
-        previous_text = "Back to Sections" if is_first_field else "← Previous"
-        
-        return ft.Row(
-            controls=[
-                ft.ElevatedButton(
-                    previous_text,
-                    on_click=self.go_to_previous_field,
-                    style=ft.ButtonStyle(
-                        color=ft.Colors.WHITE,
-                        bgcolor=ft.Colors.RED_400,
-                    )
-                ),
-                ft.ElevatedButton(
-                    "Save" if is_last_field else "Next →",
-                    on_click=self.save_and_continue,
-                    style=ft.ButtonStyle(
-                        color=ft.Colors.WHITE,
-                        bgcolor=ft.Colors.GREEN_400 if is_last_field else self.SKY_BLUE,
-                    )
-                ),
-            ],
-            alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-            width=400
-        )
-
-    def validate_numeric_input(self, e, field):
-        """اعتبارسنجی فیلد عددی"""
-        value = e.control.value
-        
-        if not value:
+        if not value_text:
             self.validation_error.value = ""
-            self.validation_error.update()
+            self.numeric_input.border_color = self.SKY_BLUE
+            self.numeric_input.update()
             return
-        
-        try:
-            num_value = float(value)
-            value_range = field['range']
-            
-            if value_range and len(value_range) == 2:
-                min_val, max_val = value_range
-                if num_value < min_val or num_value > max_val:
-                    self.validation_error.value = f"⚠ Value outside normal range ({min_val} - {max_val})"
-                    self.validation_error.color = ft.Colors.ORANGE
-                else:
-                    self.validation_error.value = "✅ Value within normal range"
-                    self.validation_error.color = ft.Colors.GREEN
-            else:
-                self.validation_error.value = "✅ Value accepted"
-                self.validation_error.color = ft.Colors.GREEN
-                
-        except ValueError:
-            self.validation_error.value = "⚠ Please enter a valid number"
-            self.validation_error.color = ft.Colors.RED
-        
-        self.validation_error.update()
 
-    def validate_option_input(self, e, field):
-        """اعتبارسنجی فیلد گزینه‌ای"""
-        selected_value = e.control.value
-        normal_option = field['normal_option']
-        
-        if selected_value:
-            if selected_value != normal_option:
-                self.option_warning.value = f"⚠ Warning: Normal option is '{normal_option}'"
-                self.option_warning.color = ft.Colors.ORANGE
+        try:
+            value = float(value_text)
+            if field['min'] is not None and field['max'] is not None:
+                if field['min'] <= value <= field['max']:
+                    self.validation_error.value = "Within normal range"
+                    self.validation_error.color = ft.Colors.GREEN_400
+                    self.numeric_input.border_color = ft.Colors.GREEN_400
+                else:
+                    self.validation_error.value = f"Out of range ({field['min']}–{field['max']})"
+                    self.validation_error.color = ft.Colors.RED_ACCENT
+                    self.numeric_input.border_color = ft.Colors.RED_ACCENT
             else:
-                self.option_warning.value = "✅ Normal option selected"
-                self.option_warning.color = ft.Colors.GREEN
-        else:
+                self.validation_error.value = "Value entered"
+                self.validation_error.color = ft.Colors.GREY_400
+        except ValueError:
+            self.validation_error.value = "Invalid number"
+            self.validation_error.color = ft.Colors.RED
+            self.numeric_input.border_color = ft.Colors.RED
+
+        self.validation_error.update()
+        self.numeric_input.update()
+
+    # چک لحظه‌ای برای گزینه‌ای
+    def on_option_change(self, e):
+        selected = e.control.value
+        field = self.fields_data[self.current_field_index]
+        normal = field.get('normal_option')
+
+        if not selected:
             self.option_warning.value = ""
-        
+            return
+
+        if normal and selected != normal:
+            self.option_warning.value = f"Abnormal (Normal: {normal})"
+            self.option_warning.color = ft.Colors.ORANGE_ACCENT
+        else:
+            self.option_warning.value = "Normal"
+            self.option_warning.color = ft.Colors.GREEN_400
+
         self.option_warning.update()
 
     def go_to_previous_field(self, e):
-        """رفتن به فیلد قبلی یا بازگشت به بخش‌ها"""
         if self.current_field_index == 0:
-            # اگر در اولین فیلد هستیم، به صفحه بخش‌ها برگرد
-            self.go_back_to_sections()
+            self.page.go("/sections")
+            self.page.update()
         else:
-            # برو به فیلد قبلی
             self.current_field_index -= 1
             self.show_current_field()
 
     def save_and_continue(self, e):
-        """ذخیره فیلد فعلی و رفتن به بعدی"""
-        current_field = self.fields_data[self.current_field_index]
-        
-        # دریافت و ذخیره مقدار فیلد فعلی
-        if current_field['type'] == 'numeric':
-            value = self.numeric_input.value
-            if value:
-                try:
-                    current_field['value'] = float(value)
-                except ValueError:
-                    self.show_error("Please enter a valid number!")
-                    return
-            else:
-                self.show_error("Please enter a value!")
+        current = self.fields_data[self.current_field_index]
+
+        if current['type'] == 'numeric':
+            value_text = self.numeric_input.value.strip()
+            if not value_text:
+                self.validation_error.value = "Please enter a value"
+                self.validation_error.color = ft.Colors.RED
+                self.validation_error.update()
                 return
-                
-        else:  # option field
-            value = self.radio_group.value
-            if value:
-                current_field['value'] = value
-            else:
-                self.show_error("Please select an option!")
+            try:
+                current['value'] = float(value_text)
+            except:
+                self.validation_error.value = "Invalid number"
+                self.validation_error.update()
                 return
-        
-        # رفتن به فیلد بعدی یا ذخیره نهایی
+
+        else:
+            if not self.radio_group.value:
+                self.option_warning.value = "Please select an option"
+                self.option_warning.color = ft.Colors.RED
+                self.option_warning.update()
+                return
+            current['value'] = self.radio_group.value
+
+        # برو بعدی
         if self.current_field_index < len(self.fields_data) - 1:
             self.current_field_index += 1
             self.show_current_field()
@@ -350,69 +260,22 @@ class SectionDetailPage:
             self.save_all_data()
 
     def save_all_data(self):
-        """ذخیره تمام داده‌های بخش"""
-        # جمع‌آوری تمام مقادیر
-        section_data = {}
-        for field in self.fields_data:
-            if field['value'] is not None:
-                section_data[field['name']] = field['value']
-        
-        # ذخیره در session
         form_data = self.page.session.get("form_data") or {}
-        if 'sections' not in form_data:
-            form_data['sections'] = {}
-        
-        form_data['sections'][self.section_name] = section_data
+        form_data.setdefault('sections', {})[self.section_name] = {
+            f['name']: f['value'] for f in self.fields_data if f['value'] is not None
+        }
         self.page.session.set("form_data", form_data)
-        
-        # نمایش موفقیت و بازگشت سریع
-        self.show_success_and_return()
 
-    def show_success_and_return(self):
-        """نمایش پیام موفقیت و بازگشت سریع به بخش‌ها"""
-        # پاک کردن صفحه و نمایش پیام موفقیت
-        self.page.controls.clear()
-        
-        success_layout = ft.Column(
-            controls=[
-                ft.Icon(ft.Icons.CHECK_CIRCLE, size=80, color=ft.Colors.GREEN),
-                ft.Text("✅ Success!", size=24, weight=ft.FontWeight.BOLD, color=ft.Colors.GREEN),
-                ft.Text(f"All data for {self.section_name} saved successfully!", 
-                       size=16, color=self.TEXT_COLOR, text_align=ft.TextAlign.CENTER),
-                ft.ProgressRing(width=30, height=30, color=ft.Colors.BLUE_400),
-                ft.Text("Returning to sections page...", size=14, color=ft.Colors.GREY_400),
-            ],
-            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-            spacing=20
-        )
-        
-        self.page.add(success_layout)
+        sb = ft.SnackBar(ft.Text(f"{self.section_name} saved successfully!"), bgcolor=ft.Colors.GREEN_700)
+        self.page.overlay.append(sb)
+        sb.open = True
         self.page.update()
-        
-        # بازگشت سریع به صفحه بخش‌ها (بدون تأخیر قابل توجه)
-        import threading
-        import time
-        
-        def navigate_back():
-            time.sleep(0.5)  # تأخیر بسیار کوتاه (نیم ثانیه)
-            self.page.run_thread(self.go_back_to_sections)
-        
-        thread = threading.Thread(target=navigate_back)
-        thread.daemon = True
-        thread.start()
 
-    def go_back_to_sections(self):
-        """بازگشت به صفحه بخش‌ها"""
-        from device_section_page import DeviceSectionPage
-        section_page = DeviceSectionPage(self.page)
-        section_page.show()
+        self.page.go("/sections")
+        self.page.update()
 
-    def show_error(self, message):
-        """نمایش خطا"""
-        snack_bar = ft.SnackBar(
-            ft.Text(message, color=ft.Colors.WHITE),
-            bgcolor=ft.Colors.RED_400
-        )
-        self.page.overlay.append(snack_bar)
-        snack_bar.open = True
+    def show_error(self, msg):
+        sb = ft.SnackBar(ft.Text(msg), bgcolor=ft.Colors.RED)
+        self.page.overlay.append(sb)
+        sb.open = True
         self.page.update()
