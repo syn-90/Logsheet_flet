@@ -7,36 +7,100 @@ from openpyxl.utils import get_column_letter
 
 class ExcelHandler:
     def __init__(self, template_file='LOG SHEET 1.xlsx', save_dir='logs'):
-        import sys, os
+            import sys, os
+            import shutil
 
-        # 🔹 مسیر واقعی فایل template در حالت exe یا py
-        if getattr(sys, 'frozen', False):
-            base_path = sys._MEIPASS  # در حالت exe
-        else:
-            base_path = os.path.dirname(__file__)  # در حالت عادی
+            # مسیر واقعی فایل template در حالت exe یا py
+            if getattr(sys, 'frozen', False):
+                base_path = sys._MEIPASS
+            else:
+                base_path = os.path.dirname(__file__)
 
-        # مسیر کامل فایل اکسل در هر حالت
-        self.template_file = os.path.join(base_path, template_file)
+            self.template_file = os.path.join(base_path, template_file)
 
-        # بقیه‌ی کد تو بدون تغییر
+            # تشخیص اندروید بدون استفاده از ft.platform
+            if os.path.exists("/storage/emulated/0/"):  # فقط روی اندروید وجود داره!
+                self.save_dir = "/storage/emulated/0/Documents/GT11_Logs"
+            else:
+                # دسکتاپ — همون رفتار قبلی
+                base_dir = os.path.join(os.path.expanduser('~'), 'Desktop')
+                self.save_dir = save_dir if save_dir else os.path.join(base_dir, 'logs')
+
+            os.makedirs(self.save_dir, exist_ok=True)
+
+            try:
+                src_template = os.path.join(os.path.dirname(__file__), 'templates', template_file)
+                dst_template = os.path.join(self.save_dir, template_file)
+
+                if os.path.exists(src_template) and not os.path.exists(dst_template):
+                    shutil.copy2(src_template, dst_template)
+            except Exception as e:
+                print("couldn't copy template:", e)
+    # def __init__(self, template_file='LOG SHEET 1.xlsx', save_dir='logs'):
+    #         import sys, os
+    #         import flet as ft  # اضافه شد
+
+    #         # مسیر واقعی فایل template در حالت exe یا py
+    #         if getattr(sys, 'frozen', False):
+    #             base_path = sys._MEIPASS  # در حالت exe
+    #         else:
+    #             base_path = os.path.dirname(__file__)  # در حالت عادی
+
+    #         self.template_file = os.path.join(base_path, template_file)
+
+    #         # فقط این قسمت تغییر کرد — مسیر ذخیره روی اندروید و دسکتاپ
+    #         if ft.platform == ft.Platform.ANDROID:
+    #             # بهترین و مجازترین مسیر روی اندروید
+    #             self.save_dir = "/storage/emulated/0/Documents/GT11_Logs"
+    #         else:
+    #             # دسکتاپ: همون رفتار قبلی (Desktop/logs)
+    #             base_dir = os.path.join(os.path.expanduser('~'), 'Desktop')
+    #             if save_dir:
+    #                 self.save_dir = save_dir
+    #             else:
+    #                 self.save_dir = os.path.join(base_dir, 'logs')
+
+    #         os.makedirs(self.save_dir, exist_ok=True)
+
+    #         try:
+    #             src_template = os.path.join(os.path.dirname(__file__), 'templates', template_file)  # درست شد: template_file نه self.template_file
+    #             dst_template = os.path.join(self.save_dir, template_file)
+
+    #             if os.path.exists(src_template) and not os.path.exists(dst_template):
+    #                 shutil.copy2(src_template, dst_template)
+    #         except Exception as e:
+    #             print("couldn't copy template:", e)
+    # def __init__(self, template_file='LOG SHEET 1.xlsx', save_dir='logs'):
+    #     import sys, os
+
+    #     # 🔹 مسیر واقعی فایل template در حالت exe یا py
+    #     if getattr(sys, 'frozen', False):
+    #         base_path = sys._MEIPASS  # در حالت exe
+    #     else:
+    #         base_path = os.path.dirname(__file__)  # در حالت عادی
+
+    #     # مسیر کامل فایل اکسل در هر حالت
+    #     self.template_file = os.path.join(base_path, template_file)
+
+    #     # بقیه‌ی کد تو بدون تغییر
     
-        base_dir = os.path.join(os.path.expanduser('~'), 'Desktop')
+    #     base_dir = os.path.join(os.path.expanduser('~'), 'Desktop')
 
-        if save_dir:
-            self.save_dir = save_dir
-        else:
-            self.save_dir = os.path.join(base_dir, 'logs')
+    #     if save_dir:
+    #         self.save_dir = save_dir
+    #     else:
+    #         self.save_dir = os.path.join(base_dir, 'logs')
 
-        os.makedirs(self.save_dir, exist_ok=True)
-        try:
-            # مسیر فایل template داخل سورس پروژه
-            src_template = os.path.join(os.path.dirname(__file__), 'templates', self.template_file)
-            dst_template = os.path.join(self.save_dir, self.template_file)
+    #     os.makedirs(self.save_dir, exist_ok=True)
+    #     try:
+    #         # مسیر فایل template داخل سورس پروژه
+    #         src_template = os.path.join(os.path.dirname(__file__), 'templates', self.template_file)
+    #         dst_template = os.path.join(self.save_dir, self.template_file)
 
-            if os.path.exists(src_template) and not os.path.exists(dst_template):
-                shutil.copy2(src_template, dst_template)
-        except Exception as e:
-            print("⚠ couldn't copy template:", e)
+    #         if os.path.exists(src_template) and not os.path.exists(dst_template):
+    #             shutil.copy2(src_template, dst_template)
+    #     except Exception as e:
+    #         print("⚠ couldn't copy template:", e)
 
     def get_save_path(self):
         """ برمی‌گردونه مسیر فایل لاگ برای تاریخ امروز """
@@ -660,3 +724,4 @@ class ExcelHandler:
         except Exception as e:
             print(f"⚠ خطا در بررسی وضعیت فیلد: {e}")
             return 'OK'
+
