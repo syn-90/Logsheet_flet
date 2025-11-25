@@ -20,18 +20,40 @@ class SectionDetailPage(ft.View):
         self.section_name = None
         self.device_name = None
 
+    # def did_mount(self):
+    #     form_data = self.page.session.get("form_data") or {}
+    #     self.device_name = form_data.get('device', 'Unknown Device')
+    #     self.section_name = form_data.get('selected_section', 'Unknown Section')
+
+    #     section_info = device_sections_map.get(self.device_name, {}).get(self.section_name, {})
+    #     if not section_info:
+    #         self.show_error("Section data not found!")
+    #         return
+
+    #     self.prepare_fields_list(section_info)
+    #     self.show_current_field()پ
     def did_mount(self):
-        form_data = self.page.session.get("form_data") or {}
-        self.device_name = form_data.get('device', 'Unknown Device')
-        self.section_name = form_data.get('selected_section', 'Unknown Section')
+            self.page.update()
 
-        section_info = device_sections_map.get(self.device_name, {}).get(self.section_name, {})
-        if not section_info:
-            self.show_error("Section data not found!")
-            return
+            form_data = self.page.session.get("form_data") or {}
+            self.device_name = form_data.get('device', 'Unknown')
+            self.section_name = form_data.get('selected_section')
 
-        self.prepare_fields_list(section_info)
-        self.show_current_field()
+            if not self.section_name:
+                self.page.go("/sections")
+                self.page.update()
+                return
+
+            section_info = device_sections_map.get(self.device_name, {}).get(self.section_name, {})
+            if not section_info:
+                self.show_error("No data for this section!")
+                self.page.go("/sections")
+                self.page.update()
+                return
+
+            self.prepare_fields_list(section_info)
+            self.current_field_index = 0
+            self.show_current_field()
 
     def prepare_fields_list(self, section_info):
         self.fields_data = []

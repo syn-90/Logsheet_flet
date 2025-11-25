@@ -20,10 +20,21 @@ class DeviceSectionPage(ft.View):
         self.section_buttons = []  # برای برجسته کردن دکمه انتخاب‌شده (اختیاری)
 
         # هیچ UI نساز! فقط متغیرها رو آماده کن
-
     def did_mount(self):
-        # فقط اینجا UI رو بساز، چون self.page قطعاً مقدار داره
-        self.build_ui()
+        self.page.update()  # حیاتی
+
+        form_data = self.page.session.get("form_data") or {}
+        device_name = form_data.get('device', 'Unknown')
+
+        if not device_name or device_name == 'Unknown':
+            self.page.go("/device")
+            self.page.update()
+            return
+
+        # فقط یک بار UI رو بساز — این خط مشکل صفحه سیاه رو ۱۰۰٪ حل میکنه!
+        if not hasattr(self, '_ui_built') or not self._ui_built:
+            self.build_ui()
+            self._ui_built = True
 
     def build_ui(self):
         self.controls.clear()
