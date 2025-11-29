@@ -7,35 +7,38 @@ from openpyxl.utils import get_column_letter
 
 class ExcelHandler:
     def __init__(self, template_file='LOG SHEET 1.xlsx', save_dir='logs'):
-            import sys, os
-            import shutil
+        import sys, os
+        import shutil
 
-            # مسیر واقعی فایل template در حالت exe یا py
-            if getattr(sys, 'frozen', False):
-                base_path = sys._MEIPASS
-            else:
-                base_path = os.path.dirname(__file__)
+        # مسیر واقعی فایل template در حالت exe یا py
+        if getattr(sys, 'frozen', False):
+            base_path = sys._MEIPASS
+        else:
+            base_path = os.path.dirname(__file__)
 
-            self.template_file = os.path.join(base_path, template_file)
+        self.template_file = os.path.join(base_path, template_file)
 
-            # تشخیص اندروید بدون استفاده از ft.platform
-            if os.path.exists("/storage/emulated/0/"):  # فقط روی اندروید وجود داره!
-                self.save_dir = "/storage/emulated/0/Android/media/GT11_Logs"
-            else:
-                # دسکتاپ — همون رفتار قبلی
-                base_dir = os.path.join(os.path.expanduser('~'), 'Desktop')
-                self.save_dir = save_dir if save_dir else os.path.join(base_dir, 'logs')
+        # --- مسیر کاملاً امن و بدون نیاز به permission ---
+        try:
+            app_dir = os.getcwd()  # مسیر sandbox برنامه در اندروید
+            self.save_dir = os.path.join(app_dir, "GT11_Logs")
+        except:
+            # اگر به هر دلیلی، باز fallback به مسیر desktop برای ویندوز
+            base_dir = os.path.join(os.path.expanduser('~'), 'Desktop')
+            self.save_dir = os.path.join(base_dir, 'logs')
 
-            os.makedirs(self.save_dir, exist_ok=True)
+        # ساخت مسیر
+        os.makedirs(self.save_dir, exist_ok=True)
 
-            try:
-                src_template = os.path.join(os.path.dirname(__file__), 'templates', template_file)
-                dst_template = os.path.join(self.save_dir, template_file)
+        # کپی‌کردن template
+        try:
+            src_template = os.path.join(os.path.dirname(__file__), 'templates', template_file)
+            dst_template = os.path.join(self.save_dir, template_file)
 
-                if os.path.exists(src_template) and not os.path.exists(dst_template):
-                    shutil.copy2(src_template, dst_template)
-            except Exception as e:
-                print("couldn't copy template:", e)
+            if os.path.exists(src_template) and not os.path.exists(dst_template):
+                shutil.copy2(src_template, dst_template)
+        except Exception as e:
+            print("couldn't copy template:", e)
 
     def get_save_path(self):
         """ برمی‌گردونه مسیر فایل لاگ برای تاریخ امروز """
