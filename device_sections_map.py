@@ -115,5 +115,52 @@ device_sections_map = {
                 }
             }
         }
+    },
+    'LV EMERGENCY BUS BAR':{
+        'BMC BUS BAR':{
+
+            'numeric_fields':{
+                'Energized From INCOMING 1/2' :{'unit' : '1/2', 'range':None},
+                'Incoming 1 Voltage(BHA)' : {'unit' : 'V', 'range':(380 , 420)},
+                'Incoming 2 Voltage(BMA)' : {'unit' : 'V', 'range':(380 , 420)}
+            } ,
+            'option_fields':{
+                'AUTO/MANUAL Selector' : {
+                    'options': ['Auto', 'Manual'], 
+                    'normal': 'Auto'}
+            }
+                       },
+
+        'LV EMERGENCY BUS BAR BMA / BMB':{
+             'numeric_fields':{
+                 'BMA incoming voltage'  :{'unit' : 'V', 'range':(380, 420)},
+                 'BMA bus voltage'  :{'unit' : 'V', 'range':(380, 421)},
+                 'BMA incoming current'  :{'unit' : 'A', 'range':None},
+                 'BMB incoming voltage'  :{'unit' : 'V', 'range':(380, 420)},
+                 'BMB BUS voltage'  :{'unit' : 'V', 'range':(3)},
+                 'BMB incoming current'  :{'unit' : 'A', 'range':None}
+
+             },
+             'option_fields' :{
+                 'incoming from BHA':{
+                     'options': ['Open', 'Close'], 
+                    'normal': 'Open'
+                 },
+                 'Incom. From BHB':{
+                     'options': ['Open', 'Close'], 
+                    'normal': 'Open'
+                 },
+                 'LOCAL/REMOTE Selector':{
+                     'options': ['LOCAL', 'REMOTE'], 
+                    'normal': 'REMOTE'
+                 },
+                 'Fault and alarm':{
+                     'options': ['OK', 'NOTOK'], 
+                    'normal': 'OK'
+                 }
+             }
+
+        }
+
     }
 }

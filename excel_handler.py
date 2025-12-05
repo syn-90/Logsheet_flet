@@ -6,7 +6,7 @@ import openpyxl
 from openpyxl.utils import get_column_letter
 
 class ExcelHandler:
-    def __init__(self, template_file='LOG SHEET 1.xlsx', save_dir='logs'):
+    def __init__(self, template_file='LOG SHEET 2.xlsx', save_dir='logs'):
             import sys, os
             import shutil
 
@@ -151,7 +151,7 @@ class ExcelHandler:
             
             time_col = self._find_time_column(ws, time_value)
             if time_col is None:
-                print("❌ ستون زمان یافت نشدK")
+                print(f"❌ {time_col}ستون زمان یافت نشدK")
                 return False
             
             print(f"✅ ستون زمان:L {time_col}")
@@ -489,38 +489,25 @@ class ExcelHandler:
             cell_value = worksheet.cell(row=time_row, column=col).value
             print(f"ستون {col} ({get_column_letter(col)}): '{cell_value}'")
 
-    def _find_time_column(self, worksheet, time_value):
-        try:
-            # تبدیل زمان به عدد (مثلاً "04:00" به 4)
-            if ":" in str(time_value):
-                time_num = int(time_value.split(":")[0])
-            else:
-                time_num = int(time_value)
-            
-            print(f"🔍 جستجوی زمان: {time_value} -> {time_num}")
-            
-            # زمان‌ها در سطر اول هستند (ردیف 1)
-            time_row = 1
-            
-            # از ستون اول تا آخر جستجو کن
-            for col in range(1, worksheet.max_column + 1):
-                cell_value = worksheet.cell(row=time_row, column=col).value
-                
-                if cell_value is not None:
-                    cell_str = str(cell_value)
-                    print(f"   بررسی ستون {col}: '{cell_str}'")
-                    
-                    # چک کن اگر سلول حاوی عدد مورد نظر ما باشد
-                    if str(time_num) in cell_str:
-                        print(f"✅ ستون زمان پیدا شد: ستون {col} ('{cell_str}')")
-                        return col
-            
-            print("❌ ستون زمان یافت نشد در سطر اول")
-            return None
-            
-        except Exception as e:
-            print(f"❌ خطا در پیدا کردن ستون زمان: {e}")
-            return None
+    # پیدا کردن سطر واقعی زمان
+    def _find_time_row(self, ws):
+        for row in range(1, 10):
+            for col in range(1, ws.max_column + 1):
+                val = ws.cell(row=row, column=col).value
+                if val and ("0:00" in str(val) or "4:00" in str(val) or "8:00" in str(val)):
+                    return row
+        return 1  # fallback
+
+    def _find_time_column(self, ws, time_value):
+        time_num = int(time_value.split(":")[0])
+        time_row = self._find_time_row(ws)
+
+        for col in range(1, ws.max_column + 1):
+            cell_value = ws.cell(row=time_row, column=col).value
+            if cell_value and str(time_num) in str(cell_value):
+                return col
+
+        return None
 
     def find_field_column(self, worksheet):
         """پیدا کردن ستونی که شامل فیلدها است"""

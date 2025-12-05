@@ -117,7 +117,7 @@ class InformationPage(ft.View):
 
             ft.Container(
                 content=ft.Column([
-                    ft.Text("SHIFT LEADER *", color=self.SKY_BLUE),
+                    ft.Text("SHIFT ENGINEER *", color=self.SKY_BLUE),
                     self.leader_group
                 ]),
                 col={"xs": 12, "md": 6}
@@ -125,7 +125,7 @@ class InformationPage(ft.View):
 
             ft.Container(
                 content=ft.Column([
-                    ft.Text("SHIFT ENGINEER *", color=self.SKY_BLUE),
+                    ft.Text("SHIFT OPERATOR *", color=self.SKY_BLUE),
                     self.eng_group
                 ]),
                 col={"xs": 12, "md": 6}
