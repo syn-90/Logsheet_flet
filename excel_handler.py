@@ -149,11 +149,25 @@ class ExcelHandler:
             
             # دوم: ذخیره کامنت (در انتهای شیت، بدون تداخل با شیفت)
             comment_text = form_data.get('comment')
-            if comment_text:
-                comment_row = ws.max_row + 2  # دو سطر فاصله برای زیبایی
-                ws.cell(row=comment_row, column=1).value = "Comment:"
-                ws.cell(row=comment_row, column=2).value = comment_text
-                print(f"📝 کامنت ذخیره شد در سطر {comment_row}")
+                    # ذخیره کامنت مربوط به شیفت (در جای درست زیر ستون شیفت)
+            comment_text = form_data.get('comment')
+            selected_time = form_data.get("time")
+
+            if comment_text and selected_time:
+                self.write_shift_comment(ws, selected_time, comment_text)
+            elif comment_text:
+                print("⚠ زمان مشخص نیست - کامنت در جای عمومی ذخیره نمی‌شود")
+            
+        # حذف این بخش قدیمی:
+        # if comment_text:
+        #     comment_row = ws.max_row + 2
+        #     ws.cell(row=comment_row, column=1).value = "Comment:"
+        #     ws.cell(row=comment_row, column=2).value = comment_text
+            # if comment_text:
+            #     comment_row = ws.max_row + 2  # دو سطر فاصله برای زیبایی
+            #     ws.cell(row=comment_row, column=1).value = "Comment:"
+            #     ws.cell(row=comment_row, column=2).value = comment_text
+            #     print(f"📝 کامنت ذخیره شد در سطر {comment_row}")
             
             # ذخیره نهایی فایل
             wb.save(output_path)
@@ -170,269 +184,92 @@ class ExcelHandler:
             import traceback
             traceback.print_exc()
             return False    
-#     def save_form_data(self, form_data):
-#         """ذخیره داده‌های فرم در اکسل - اگر فایل امروز وجود دارد به آن اضافه کن"""
-#         try:
-#             print("🔄A شروع فرآیند ذخیره‌سازی...")
-#             print(f"📋 Bداده‌های دریافتی: {form_data}")
-            
-#             # بررسی وجود فایل template
-#             if not os.path.exists(self.template_file):
-#                 print(f"❌ فایل template یافت نشد:C {self.template_file}")
-#                 return False
-            
-#             # ایجاد نام فایل خروجی با تاریخ امروز
-#             today = datetime.now().strftime("%Y-%m-%d")
-#             output_path = os.path.join(self.save_dir, f"GT_Log_{today}.xlsx")
-            
-#             # بررسی اگر فایل امروز وجود دارد
-#             if os.path.exists(output_path):
-#                 print(f"✅ فایل امروز موجود است: D{output_path}")
-#                 print("📖 استفاده از فایل موجود و اضافه کردن داده‌های جدید...E")
-#                 # از فایل موجود استفاده کن
-#                 wb = openpyxl.load_workbook(output_path)
-#             else:
-#                 print(f"📋 ایجاد فایل جدید برای امروز: F{output_path}")
-#                 # ایجاد فایل جدید از روی template
-#                 shutil.copy2(self.template_file, output_path)
-#                 wb = openpyxl.load_workbook(output_path)
-            
-#             device_name = form_data.get('device', 'General')
-#             print(f"📊 دستگاه انتخاب شده:G {device_name}")
-            
-#             # انتخاب شیت مربوط به دستگاه
-#             if device_name in wb.sheetnames:
-#                 ws = wb[device_name]
-#                 print(f"✅ شیت H{device_name} پیدا شد")
-#             else:
-#                 print(f"⚠ شیت I{device_name} یافت نشد، استفاده از اولین شیت")
-#                 ws = wb[wb.sheetnames[0]]
-            
-#             # پیدا کردن ستون زمان
-#             time_value = form_data.get('time', '0')
-#             print(f"⏰ زمان انتخاب شده:J {time_value}")
-            
-#             time_col = self._find_time_column(ws, time_value)
-#             if time_col is None:
-#                 print(f"❌ {time_col}ستون زمان یافت نشدK")
-#                 return False
-            
-#             print(f"✅ ستون زمان:L {time_col}")
-            
-#             # بررسی اگر این سلول قبلاً پر شده است
-#             existing_value = None
-#             try:
-#                 # اینجا باید یک سلول نمونه را چک کنیم تا ببینیم قبلاً پر شده یا نه
-#                 # مثلاً اولین فیلد از اولین بخش را چک می‌کنیم
-#                 sections_data = form_data.get('sections', {})
-#                 if sections_data:
-#                     first_section = list(sections_data.keys())[0]
-#                     first_field = list(sections_data[first_section].keys())[0]
-                    
-#                     # پیدا کردن موقعیت فیلد
-#                     section_position = self._find_exact_section_position(ws, first_section)
-#                     if section_position:
-#                         field_column = self._find_field_column_near_section(ws, section_position)
-#                         if field_column:
-#                             field_row = self._find_exact_field_row(ws, first_field, section_position, field_column)
-#                             if field_row:
-#                                 existing_value = ws.cell(row=field_row, column=time_col).value
-#             except:
-#                 pass
-            
-#             if existing_value is not None:
-#                 print(f"M⚠ هشدار: سلول ({field_row}, {time_col}) قبلاً با مقدار '{existing_value}' پر شده است")
-#                 print("📝 مقدار جدید جایگزین خواهد شد")
-            
-#             # پردازش تمام بخش‌ها
-#             sections_data = form_data.get('sections', {})
-#             print(f"📝 بخش‌های برای پردازش: N{list(sections_data.keys())}")
-            
-#             for section_name, fields in sections_data.items():
-#                 print(f"\n🎯 شروع پردازش بخش: {section_name}")
-#                 print(f"📋 فیلدهای این بخش: {list(fields.keys())}")
-                
-#                 # پیدا کردن موقعیت دقیق این بخش در اکسل
-#                 section_position = self._find_exact_section_position(ws, section_name)
-                
-#                 if not section_position:
-#                     print(f"⚠ بخش {section_name} در اکسل یافت نشد")
-#                     continue
-                
-#                 print(f"✅ بخش {section_name} در سطر {section_position['section_row']}, ستون {section_position['section_col']} پیدا شد")
-                
-#                 # پیدا کردن ستون فیلدها برای این بخش
-#                 field_column = self._find_field_column_near_section(ws, section_position)
-#                 if not field_column:
-#                     print(f"⚠ ستون فیلدها برای بخش {section_name} یافت نشد")
-#                     continue
-                
-#                 print(f"✅ ستون فیلدها برای بخش {section_name}: {field_column}")
-                
-#                 # پردازش تمام فیلدهای این بخش
-#                 for field_name, field_value in fields.items():
-#                     print(f"  📋 پردازش فیلد: {field_name} = {field_value}")
-                    
-#                     # پیدا کردن سطر دقیق این فیلد در محدوده بخش
-#                     field_row = self._find_exact_field_row(ws, field_name, section_position, field_column)
-                    
-#                     if field_row:
-#                         print(f"    ✅ سطر فیلد پیدا شد: {field_row}")
-                        
-#                         # بررسی اگر سلول قبلاً پر شده
-#                         current_value = ws.cell(row=field_row, column=time_col).value
-#                         if current_value is not None:
-#                             print(f"    ⚠ سلول قبلاً با مقدار '{current_value}' پر شده بود")
-                        
-#                         # ذخیره مقدار در سلول مناسب
-#                         ws.cell(row=field_row, column=time_col, value=field_value)
-#                         print(f"    ✅ مقدار {field_value} در سلول ({field_row}, {time_col}) ذخیره شد")
-#                     else:
-#                         print(f"    ❌ سطر برای فیلد {field_name} یافت نشد")
-            
-#             # ذخیره‌ی کامنت در پایان شیت
-#             comment_text = form_data.get('comment', None)
-#             if comment_text:
-#                 last_row = ws.max_row + 2  # دو سطر فاصله برای زیبایی
-#                 ws.cell(row=last_row, column=1).value = "Comment:"
-#                 ws.cell(row=last_row, column=2).value = comment_text
-#                 print(f"📝 کامنت ذخیره شد در سطر {last_row}: {comment_text}")
-#             selected_time = form_data.get("time")
-#             operator = form_data.get("shift_leader")
-#             engineer = form_data.get("shift_engineer")
-
-#             self.write_shift_info(ws, selected_time, operator, engineer)
-#             # -----------------------------------
 
 
-#             # -----------------------------------
-# #  ثبت شیفت (اپراتور + مهندس)
 
-#             selected_time = form_data.get("time")
-#             operator = form_data.get("shift_leader")
-#             engineer = form_data.get("shift_engineer")
 
-#             # پیدا کردن آخرین ردیف واقعیِ هر دستگاه (پایین جدول اصلی)
-#             last_data_row = ws.max_row
 
-#             # ما مقدار را در همان ردیف last_data_row می‌نویسیم
-#             # چون OPERATOR و ENGINEER باید در همان ردیف شیفت باشند
 
-#             # نوشتن اسم اپراتور
-#             self.write_value(ws, f"A{last_data_row}", 'operator', operator, selected_time)
-#             self.write_value(ws, f"A{last_data_row}", 'engineer', engineer, selected_time)
-
-# # -----------------------------------
-
-#             wb.save(output_path)
-#             print(f"✅ داده‌ها با موفقیت در {output_path} ذخیره شدند")
-            
-#             # نمایش اطلاعات فایل
-#             file_size = os.path.getsize(output_path) / 1024  # به کیلوبایت
-#             print(f"📊 حجم فایل: {file_size:.2f} KB")
-#             print(f"🕒 زمان ذخیره‌سازی: {datetime.now().strftime('%H:%M:%S')}")
-            
-#             return True
-            
-#         except Exception as e:
-#             print(f"❌ خطا در ذخیره داده‌ها: {str(e)}")
-#             import traceback
-#             traceback.print_exc()
-#             return False
-    
+    def write_shift_comment(self, ws, selected_time, comment_text):
+        """
+    کامنت مربوط به زمان انتخاب شده را در ستون صحیح شیفت اضافه می‌کند.
+    اگر قبلاً کامنتی وجود داشته باشد، کامنت جدید به انتهای آن (با خط جدید) اضافه می‌شود.
+    """
+        if not comment_text:
+            print("⚠ کامنت خالی است - ذخیره نشد")
+            return
 
         from openpyxl.cell.cell import MergedCell
-        from openpyxl.utils import get_column_letter
 
-        # ───────────────── helper ─────────────────
-    # def get_real_cell(row, col):
-    #             cell = ws.cell(row=row, column=col)
-    #             if isinstance(cell, MergedCell):
-    #                 for mr in ws.merged_cells.ranges:
-    #                     if mr.min_row <= row <= mr.max_row and mr.min_col <= col <= mr.max_col:
-    #                         return ws.cell(row=mr.min_row, column=mr.min_col)
-    #             return cell
+        def norm(v):
+            return str(v).strip().upper() if v else ""
 
-    #         # ───────── 1️⃣ پیدا کردن ردیف NIGHT / DAY / NIGHT ─────────
-    #         shift_row = None
-    #         for r in range(1, ws.max_row + 1):
-    #             values = [
-    #                 str(ws.cell(r, c).value).strip().upper()
-    #                 if ws.cell(r, c).value else ""
-    #                 for c in range(1, ws.max_column + 1)
-    #             ]
-    #             if values.count("NIGHT SHIFT") >= 2 and "DAY SHIFT" in values:
-    #                 shift_row = r
-    #                 break
+        def real_cell(row, col):
+            cell = ws.cell(row=row, column=col)
+            if isinstance(cell, MergedCell):
+                for mr in ws.merged_cells.ranges:
+                    if mr.min_row <= row <= mr.max_row and mr.min_col <= col <= mr.max_col:
+                        return ws.cell(row=mr.min_row, column=mr.min_col)
+            return cell
 
-    #         if not shift_row:
-    #             print("❌ ردیف شیفت‌ها پیدا نشد")
-    #             return
+        hour = int(selected_time.split(":")[0])
 
-    #         # ───────── 2️⃣ ستون شروع هر شیفت ─────────
-    #         night_cols = []
-    #         day_col = None
+        # تعیین کلید عنوان کامنت بر اساس شیفت
+        if hour in (0, 4):
+            comment_key = ".COMMENT"        # NIGHT SHIFT اول (چپ)
+        elif hour in (8, 12, 16):
+            comment_key = "COMMENT"         # DAY SHIFT (وسط)
+        elif hour == 20:
+            comment_key = "COMMENT."        # NIGHT SHIFT دوم (راست)
+        else:
+            print(f"❌ ساعت نامعتبر برای کامنت: {selected_time}")
+            return
 
-    #         for c in range(1, ws.max_column + 1):
-    #             v = ws.cell(shift_row, c).value
-    #             if isinstance(v, str):
-    #                 t = v.strip().upper()
-    #                 if t == "NIGHT SHIFT":
-    #                     night_cols.append(c)
-    #                 elif t == "DAY SHIFT":
-    #                     day_col = c
+        # 1️⃣ پیدا کردن ردیف عنوان کامنت (مثل comment / .comment / comment.)
+        comment_title_row = None
+        for r in range(1, ws.max_row + 1):
+            for c in range(1, ws.max_column + 1):
+                if norm(ws.cell(r, c).value) == comment_key:
+                    comment_title_row = r
+                    break
+            if comment_title_row:
+                break
 
-    #         if len(night_cols) < 2 or not day_col:
-    #             print("❌ ستون‌های شیفت کامل نیست")
-    #             return
+        if not comment_title_row:
+            print(f"❌ ردیف عنوان کامنت '{comment_key}' پیدا نشد")
+            return
 
-    #         night1_col = night_cols[0]
-    #         night2_col = night_cols[1]
+        # 2️⃣ پیدا کردن ستون دقیق این عنوان
+        comment_col = None
+        for c in range(1, ws.max_column + 1):
+            if norm(ws.cell(comment_title_row, c).value) == comment_key:
+                comment_col = c
+                break
 
-    #         # ───────── 3️⃣ تشخیص شیفت بر اساس ساعت ─────────
-    #         hour = int(selected_time.split(":")[0])
+        if not comment_col:
+            print(f"❌ ستون '{comment_key}' پیدا نشد")
+            return
 
-    #         if hour in (0, 4):
-    #             base_col = night1_col
-    #             shift_name = "NIGHT 1"
-    #         elif hour in (8, 12, 16):
-    #             base_col = day_col
-    #             shift_name = "DAY"
-    #         elif hour == 20:
-    #             base_col = night2_col
-    #             shift_name = "NIGHT 2"
-    #         else:
-    #             print("⚠️ ساعت نامعتبر:", selected_time)
-    #             return
+        # 3️⃣ ردیف نوشتن کامنت = یک ردیف پایین‌تر
+        value_row = comment_title_row + 1
 
-    #         # ───────── 4️⃣ ردیف‌ها ─────────
-    #         label_row = shift_row + 1        # OPERATOR / ENGINEER
-    #         value_row = label_row + 1        # ردیف نوشتن نام‌ها
+        # 4️⃣ خواندن کامنت فعلی (اگر وجود داشته باشد)
+        current_comment = real_cell(value_row, comment_col).value
+        current_comment = str(current_comment) if current_comment else ""
 
-    #         # ───────── 5️⃣ فقط داخل بلاک همان شیفت ستون‌ها را پیدا کن ─────────
-    #         op_col = eng_col = None
-    #         for c in range(base_col, base_col + 4):
-    #             txt = ws.cell(label_row, c).value
-    #             if isinstance(txt, str):
-    #                 t = txt.strip().upper()
-    #                 if t == "OPERATOR":
-    #                     op_col = c
-    #                 elif t == "ENGINEER":
-    #                     eng_col = c
+        # 5️⃣ اضافه کردن کامنت جدید (با خط جدید اگر قبلاً چیزی بود)
+        if current_comment.strip():
+            # اگر قبلاً کامنت بود، یک خط جدید + زمان + کامنت جدید اضافه کن
+            new_comment = f"{current_comment}\n - {comment_text.strip()}"
+        else:
+            # اولین کامنت
+            new_comment = f" {comment_text.strip()}"
 
-    #         if not op_col or not eng_col:
-    #             print("❌ ستون OPERATOR / ENGINEER پیدا نشد")
-    #             return
+        # 6️⃣ نوشتن کامنت نهایی
+        real_cell(value_row, comment_col).value = new_comment
 
-    #         # ───────── 6️⃣ نوشتن امن داخل merged cell ─────────
-    #         get_real_cell(value_row, op_col).value = operator
-    #         get_real_cell(value_row, eng_col).value = engineer
-
-    #         print(
-    #             f"✔ {shift_name} | {selected_time} → "
-    #             f"OPERATOR={operator} ({get_column_letter(op_col)}{value_row}) , "
-    #             f"ENGINEER={engineer} ({get_column_letter(eng_col)}{value_row})"
-    #         )    
+        print(f"✅ کامنت شیفت ({selected_time}) اضافه شد به ستون {comment_col}، سطر {value_row}")
+        print(f"   📝 متن نهایی: {new_comment.replace('\n', ' ↵ ')}")
 
 
 
