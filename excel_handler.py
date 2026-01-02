@@ -4,9 +4,9 @@ import sys
 from datetime import datetime
 import openpyxl
 from openpyxl.utils import get_column_letter
-
+from openpyxl.cell.cell import MergedCell
 class ExcelHandler:
-    def __init__(self, template_file='LOG SHEET 2.xlsx', save_dir='logs'):
+    def __init__(self, template_file='LOG SHEET 3.xlsx', save_dir='logs'):
             import sys, os
             import shutil
 
@@ -36,137 +36,66 @@ class ExcelHandler:
                     shutil.copy2(src_template, dst_template)
             except Exception as e:
                 print("couldn't copy template:", e)
-    # def __init__(self, template_file='LOG SHEET 1.xlsx', save_dir='logs'):
-    #         import sys, os
-    #         import flet as ft  # اضافه شد
-
-    #         # مسیر واقعی فایل template در حالت exe یا py
-    #         if getattr(sys, 'frozen', False):
-    #             base_path = sys._MEIPASS  # در حالت exe
-    #         else:
-    #             base_path = os.path.dirname(__file__)  # در حالت عادی
-
-    #         self.template_file = os.path.join(base_path, template_file)
-
-    #         # فقط این قسمت تغییر کرد — مسیر ذخیره روی اندروید و دسکتاپ
-    #         if ft.platform == ft.Platform.ANDROID:
-    #             # بهترین و مجازترین مسیر روی اندروید
-    #             self.save_dir = "/storage/emulated/0/Documents/GT11_Logs"
-    #         else:
-    #             # دسکتاپ: همون رفتار قبلی (Desktop/logs)
-    #             base_dir = os.path.join(os.path.expanduser('~'), 'Desktop')
-    #             if save_dir:
-    #                 self.save_dir = save_dir
-    #             else:
-    #                 self.save_dir = os.path.join(base_dir, 'logs')
-
-    #         os.makedirs(self.save_dir, exist_ok=True)
-
-    #         try:
-    #             src_template = os.path.join(os.path.dirname(__file__), 'templates', template_file)  # درست شد: template_file نه self.template_file
-    #             dst_template = os.path.join(self.save_dir, template_file)
-
-    #             if os.path.exists(src_template) and not os.path.exists(dst_template):
-    #                 shutil.copy2(src_template, dst_template)
-    #         except Exception as e:
-    #             print("couldn't copy template:", e)
-    # def __init__(self, template_file='LOG SHEET 1.xlsx', save_dir='logs'):
-    #     import sys, os
-
-    #     # 🔹 مسیر واقعی فایل template در حالت exe یا py
-    #     if getattr(sys, 'frozen', False):
-    #         base_path = sys._MEIPASS  # در حالت exe
-    #     else:
-    #         base_path = os.path.dirname(__file__)  # در حالت عادی
-
-    #     # مسیر کامل فایل اکسل در هر حالت
-    #     self.template_file = os.path.join(base_path, template_file)
-
-    #     # بقیه‌ی کد تو بدون تغییر
-    
-    #     base_dir = os.path.join(os.path.expanduser('~'), 'Desktop')
-
-    #     if save_dir:
-    #         self.save_dir = save_dir
-    #     else:
-    #         self.save_dir = os.path.join(base_dir, 'logs')
-
-    #     os.makedirs(self.save_dir, exist_ok=True)
-    #     try:
-    #         # مسیر فایل template داخل سورس پروژه
-    #         src_template = os.path.join(os.path.dirname(__file__), 'templates', self.template_file)
-    #         dst_template = os.path.join(self.save_dir, self.template_file)
-
-    #         if os.path.exists(src_template) and not os.path.exists(dst_template):
-    #             shutil.copy2(src_template, dst_template)
-    #     except Exception as e:
-    #         print("⚠ couldn't copy template:", e)
 
     def get_save_path(self):
         """ برمی‌گردونه مسیر فایل لاگ برای تاریخ امروز """
         today = datetime.today().strftime('%Y-%m-%d')
         filename = f"GT_Log_{today}.xlsx"
-        return os.path.join(self.save_dir, filename)    
+        return os.path.join(self.save_dir, filename)
+
     def save_form_data(self, form_data):
         """ذخیره داده‌های فرم در اکسل - اگر فایل امروز وجود دارد به آن اضافه کن"""
         try:
-            print("🔄A شروع فرآیند ذخیره‌سازی...")
-            print(f"📋 Bداده‌های دریافتی: {form_data}")
+            print("🔄 شروع فرآیند ذخیره‌سازی...")
+            print(f"📋 داده‌های دریافتی: {form_data}")
             
             # بررسی وجود فایل template
             if not os.path.exists(self.template_file):
-                print(f"❌ فایل template یافت نشد:C {self.template_file}")
+                print(f"❌ فایل template یافت نشد: {self.template_file}")
                 return False
             
             # ایجاد نام فایل خروجی با تاریخ امروز
             today = datetime.now().strftime("%Y-%m-%d")
             output_path = os.path.join(self.save_dir, f"GT_Log_{today}.xlsx")
             
-            # بررسی اگر فایل امروز وجود دارد
+            # بارگذاری یا ایجاد فایل اکسل
             if os.path.exists(output_path):
-                print(f"✅ فایل امروز موجود است: D{output_path}")
-                print("📖 استفاده از فایل موجود و اضافه کردن داده‌های جدید...E")
-                # از فایل موجود استفاده کن
+                print(f"✅ فایل امروز موجود است: {output_path}")
                 wb = openpyxl.load_workbook(output_path)
             else:
-                print(f"📋 ایجاد فایل جدید برای امروز: F{output_path}")
-                # ایجاد فایل جدید از روی template
+                print(f"📋 ایجاد فایل جدید برای امروز: {output_path}")
                 shutil.copy2(self.template_file, output_path)
                 wb = openpyxl.load_workbook(output_path)
             
+            # انتخاب شیت دستگاه
             device_name = form_data.get('device', 'General')
-            print(f"📊 دستگاه انتخاب شده:G {device_name}")
+            print(f"📊 دستگاه انتخاب شده: {device_name}")
             
-            # انتخاب شیت مربوط به دستگاه
             if device_name in wb.sheetnames:
                 ws = wb[device_name]
-                print(f"✅ شیت H{device_name} پیدا شد")
+                print(f"✅ شیت {device_name} پیدا شد")
             else:
-                print(f"⚠ شیت I{device_name} یافت نشد، استفاده از اولین شیت")
+                print(f"⚠ شیت {device_name} یافت نشد، استفاده از اولین شیت")
                 ws = wb[wb.sheetnames[0]]
             
             # پیدا کردن ستون زمان
-            time_value = form_data.get('time', '0')
-            print(f"⏰ زمان انتخاب شده:J {time_value}")
+            time_value = form_data.get('time')
+            print(f"⏰ زمان انتخاب شده: {time_value}")
             
             time_col = self._find_time_column(ws, time_value)
             if time_col is None:
-                print(f"❌ {time_col}ستون زمان یافت نشدK")
+                print(f"❌ ستون زمان {time_value} یافت نشد")
                 return False
             
-            print(f"✅ ستون زمان:L {time_col}")
+            print(f"✅ ستون زمان: {time_col}")
             
-            # بررسی اگر این سلول قبلاً پر شده است
+            # بررسی تکراری بودن ورود داده (اختیاری - برای هشدار)
             existing_value = None
             try:
-                # اینجا باید یک سلول نمونه را چک کنیم تا ببینیم قبلاً پر شده یا نه
-                # مثلاً اولین فیلد از اولین بخش را چک می‌کنیم
                 sections_data = form_data.get('sections', {})
                 if sections_data:
                     first_section = list(sections_data.keys())[0]
                     first_field = list(sections_data[first_section].keys())[0]
-                    
-                    # پیدا کردن موقعیت فیلد
                     section_position = self._find_exact_section_position(ws, first_section)
                     if section_position:
                         field_column = self._find_field_column_near_section(ws, section_position)
@@ -174,74 +103,65 @@ class ExcelHandler:
                             field_row = self._find_exact_field_row(ws, first_field, section_position, field_column)
                             if field_row:
                                 existing_value = ws.cell(row=field_row, column=time_col).value
-            except:
-                pass
+            except Exception as e:
+                print(f"⚠ خطا در بررسی تکراری بودن: {e}")
             
             if existing_value is not None:
-                print(f"M⚠ هشدار: سلول ({field_row}, {time_col}) قبلاً با مقدار '{existing_value}' پر شده است")
-                print("📝 مقدار جدید جایگزین خواهد شد")
+                print(f"⚠ هشدار: این زمان قبلاً پر شده است. مقدار جدید جایگزین خواهد شد.")
             
-            # پردازش تمام بخش‌ها
+            # پردازش و ذخیره تمام بخش‌ها و فیلدها
             sections_data = form_data.get('sections', {})
-            print(f"📝 بخش‌های برای پردازش: N{list(sections_data.keys())}")
+            print(f"📝 بخش‌های برای پردازش: {list(sections_data.keys())}")
             
             for section_name, fields in sections_data.items():
-                print(f"\n🎯 شروع پردازش بخش: {section_name}")
-                print(f"📋 فیلدهای این بخش: {list(fields.keys())}")
+                print(f"\n🎯 پردازش بخش: {section_name}")
                 
-                # پیدا کردن موقعیت دقیق این بخش در اکسل
                 section_position = self._find_exact_section_position(ws, section_name)
-                
                 if not section_position:
                     print(f"⚠ بخش {section_name} در اکسل یافت نشد")
                     continue
                 
-                print(f"✅ بخش {section_name} در سطر {section_position['section_row']}, ستون {section_position['section_col']} پیدا شد")
-                
-                # پیدا کردن ستون فیلدها برای این بخش
                 field_column = self._find_field_column_near_section(ws, section_position)
                 if not field_column:
                     print(f"⚠ ستون فیلدها برای بخش {section_name} یافت نشد")
                     continue
                 
-                print(f"✅ ستون فیلدها برای بخش {section_name}: {field_column}")
-                
-                # پردازش تمام فیلدهای این بخش
                 for field_name, field_value in fields.items():
-                    print(f"  📋 پردازش فیلد: {field_name} = {field_value}")
-                    
-                    # پیدا کردن سطر دقیق این فیلد در محدوده بخش
                     field_row = self._find_exact_field_row(ws, field_name, section_position, field_column)
-                    
                     if field_row:
-                        print(f"    ✅ سطر فیلد پیدا شد: {field_row}")
-                        
-                        # بررسی اگر سلول قبلاً پر شده
                         current_value = ws.cell(row=field_row, column=time_col).value
                         if current_value is not None:
-                            print(f"    ⚠ سلول قبلاً با مقدار '{current_value}' پر شده بود")
-                        
-                        # ذخیره مقدار در سلول مناسب
+                            print(f"    ⚠ سلول ({field_row},{time_col}) قبلاً پر بود: '{current_value}' → جایگزینی")
                         ws.cell(row=field_row, column=time_col, value=field_value)
-                        print(f"    ✅ مقدار {field_value} در سلول ({field_row}, {time_col}) ذخیره شد")
+                        print(f"    ✅ {field_name} = {field_value} ذخیره شد")
                     else:
-                        print(f"    ❌ سطر برای فیلد {field_name} یافت نشد")
+                        print(f"    ❌ سطر فیلد {field_name} یافت نشد")
             
-            # ذخیره‌ی کامنت در پایان شیت
-            comment_text = form_data.get('comment', None)
+            # اول: ذخیره اطلاعات شیفت (اپراتور و مهندس) در جای درست
+            selected_time = form_data.get("time")
+            shift_leader = form_data.get("shift_leader")      # معمولاً مهندس شیفت
+            shift_engineer = form_data.get("shift_engineer")  # معمولاً اپراتور شیفت
+            
+            if selected_time and shift_leader and shift_engineer:
+                self.write_shift_info(ws, selected_time, shift_leader, shift_engineer)
+            else:
+                print("⚠ اطلاعات شیفت ناقص است - ذخیره نشد")
+            
+            # دوم: ذخیره کامنت (در انتهای شیت، بدون تداخل با شیفت)
+            comment_text = form_data.get('comment')
             if comment_text:
-                last_row = ws.max_row + 2  # دو سطر فاصله برای زیبایی
-                ws.cell(row=last_row, column=1).value = "Comment:"
-                ws.cell(row=last_row, column=2).value = comment_text
-                print(f"📝 کامنت ذخیره شد در سطر {last_row}: {comment_text}")
-
+                comment_row = ws.max_row + 2  # دو سطر فاصله برای زیبایی
+                ws.cell(row=comment_row, column=1).value = "Comment:"
+                ws.cell(row=comment_row, column=2).value = comment_text
+                print(f"📝 کامنت ذخیره شد در سطر {comment_row}")
+            
+            # ذخیره نهایی فایل
             wb.save(output_path)
             print(f"✅ داده‌ها با موفقیت در {output_path} ذخیره شدند")
             
-            # نمایش اطلاعات فایل
-            file_size = os.path.getsize(output_path) / 1024  # به کیلوبایت
+            file_size = os.path.getsize(output_path) / 1024
             print(f"📊 حجم فایل: {file_size:.2f} KB")
-            print(f"🕒 زمان ذخیره‌سازی: {datetime.now().strftime('%H:%M:%S')}")
+            print(f"🕒 زمان ذخیره: {datetime.now().strftime('%H:%M:%S')}")
             
             return True
             
@@ -249,56 +169,420 @@ class ExcelHandler:
             print(f"❌ خطا در ذخیره داده‌ها: {str(e)}")
             import traceback
             traceback.print_exc()
-            return False
+            return False    
+#     def save_form_data(self, form_data):
+#         """ذخیره داده‌های فرم در اکسل - اگر فایل امروز وجود دارد به آن اضافه کن"""
+#         try:
+#             print("🔄A شروع فرآیند ذخیره‌سازی...")
+#             print(f"📋 Bداده‌های دریافتی: {form_data}")
+            
+#             # بررسی وجود فایل template
+#             if not os.path.exists(self.template_file):
+#                 print(f"❌ فایل template یافت نشد:C {self.template_file}")
+#                 return False
+            
+#             # ایجاد نام فایل خروجی با تاریخ امروز
+#             today = datetime.now().strftime("%Y-%m-%d")
+#             output_path = os.path.join(self.save_dir, f"GT_Log_{today}.xlsx")
+            
+#             # بررسی اگر فایل امروز وجود دارد
+#             if os.path.exists(output_path):
+#                 print(f"✅ فایل امروز موجود است: D{output_path}")
+#                 print("📖 استفاده از فایل موجود و اضافه کردن داده‌های جدید...E")
+#                 # از فایل موجود استفاده کن
+#                 wb = openpyxl.load_workbook(output_path)
+#             else:
+#                 print(f"📋 ایجاد فایل جدید برای امروز: F{output_path}")
+#                 # ایجاد فایل جدید از روی template
+#                 shutil.copy2(self.template_file, output_path)
+#                 wb = openpyxl.load_workbook(output_path)
+            
+#             device_name = form_data.get('device', 'General')
+#             print(f"📊 دستگاه انتخاب شده:G {device_name}")
+            
+#             # انتخاب شیت مربوط به دستگاه
+#             if device_name in wb.sheetnames:
+#                 ws = wb[device_name]
+#                 print(f"✅ شیت H{device_name} پیدا شد")
+#             else:
+#                 print(f"⚠ شیت I{device_name} یافت نشد، استفاده از اولین شیت")
+#                 ws = wb[wb.sheetnames[0]]
+            
+#             # پیدا کردن ستون زمان
+#             time_value = form_data.get('time', '0')
+#             print(f"⏰ زمان انتخاب شده:J {time_value}")
+            
+#             time_col = self._find_time_column(ws, time_value)
+#             if time_col is None:
+#                 print(f"❌ {time_col}ستون زمان یافت نشدK")
+#                 return False
+            
+#             print(f"✅ ستون زمان:L {time_col}")
+            
+#             # بررسی اگر این سلول قبلاً پر شده است
+#             existing_value = None
+#             try:
+#                 # اینجا باید یک سلول نمونه را چک کنیم تا ببینیم قبلاً پر شده یا نه
+#                 # مثلاً اولین فیلد از اولین بخش را چک می‌کنیم
+#                 sections_data = form_data.get('sections', {})
+#                 if sections_data:
+#                     first_section = list(sections_data.keys())[0]
+#                     first_field = list(sections_data[first_section].keys())[0]
+                    
+#                     # پیدا کردن موقعیت فیلد
+#                     section_position = self._find_exact_section_position(ws, first_section)
+#                     if section_position:
+#                         field_column = self._find_field_column_near_section(ws, section_position)
+#                         if field_column:
+#                             field_row = self._find_exact_field_row(ws, first_field, section_position, field_column)
+#                             if field_row:
+#                                 existing_value = ws.cell(row=field_row, column=time_col).value
+#             except:
+#                 pass
+            
+#             if existing_value is not None:
+#                 print(f"M⚠ هشدار: سلول ({field_row}, {time_col}) قبلاً با مقدار '{existing_value}' پر شده است")
+#                 print("📝 مقدار جدید جایگزین خواهد شد")
+            
+#             # پردازش تمام بخش‌ها
+#             sections_data = form_data.get('sections', {})
+#             print(f"📝 بخش‌های برای پردازش: N{list(sections_data.keys())}")
+            
+#             for section_name, fields in sections_data.items():
+#                 print(f"\n🎯 شروع پردازش بخش: {section_name}")
+#                 print(f"📋 فیلدهای این بخش: {list(fields.keys())}")
+                
+#                 # پیدا کردن موقعیت دقیق این بخش در اکسل
+#                 section_position = self._find_exact_section_position(ws, section_name)
+                
+#                 if not section_position:
+#                     print(f"⚠ بخش {section_name} در اکسل یافت نشد")
+#                     continue
+                
+#                 print(f"✅ بخش {section_name} در سطر {section_position['section_row']}, ستون {section_position['section_col']} پیدا شد")
+                
+#                 # پیدا کردن ستون فیلدها برای این بخش
+#                 field_column = self._find_field_column_near_section(ws, section_position)
+#                 if not field_column:
+#                     print(f"⚠ ستون فیلدها برای بخش {section_name} یافت نشد")
+#                     continue
+                
+#                 print(f"✅ ستون فیلدها برای بخش {section_name}: {field_column}")
+                
+#                 # پردازش تمام فیلدهای این بخش
+#                 for field_name, field_value in fields.items():
+#                     print(f"  📋 پردازش فیلد: {field_name} = {field_value}")
+                    
+#                     # پیدا کردن سطر دقیق این فیلد در محدوده بخش
+#                     field_row = self._find_exact_field_row(ws, field_name, section_position, field_column)
+                    
+#                     if field_row:
+#                         print(f"    ✅ سطر فیلد پیدا شد: {field_row}")
+                        
+#                         # بررسی اگر سلول قبلاً پر شده
+#                         current_value = ws.cell(row=field_row, column=time_col).value
+#                         if current_value is not None:
+#                             print(f"    ⚠ سلول قبلاً با مقدار '{current_value}' پر شده بود")
+                        
+#                         # ذخیره مقدار در سلول مناسب
+#                         ws.cell(row=field_row, column=time_col, value=field_value)
+#                         print(f"    ✅ مقدار {field_value} در سلول ({field_row}, {time_col}) ذخیره شد")
+#                     else:
+#                         print(f"    ❌ سطر برای فیلد {field_name} یافت نشد")
+            
+#             # ذخیره‌ی کامنت در پایان شیت
+#             comment_text = form_data.get('comment', None)
+#             if comment_text:
+#                 last_row = ws.max_row + 2  # دو سطر فاصله برای زیبایی
+#                 ws.cell(row=last_row, column=1).value = "Comment:"
+#                 ws.cell(row=last_row, column=2).value = comment_text
+#                 print(f"📝 کامنت ذخیره شد در سطر {last_row}: {comment_text}")
+#             selected_time = form_data.get("time")
+#             operator = form_data.get("shift_leader")
+#             engineer = form_data.get("shift_engineer")
+
+#             self.write_shift_info(ws, selected_time, operator, engineer)
+#             # -----------------------------------
+
+
+#             # -----------------------------------
+# #  ثبت شیفت (اپراتور + مهندس)
+
+#             selected_time = form_data.get("time")
+#             operator = form_data.get("shift_leader")
+#             engineer = form_data.get("shift_engineer")
+
+#             # پیدا کردن آخرین ردیف واقعیِ هر دستگاه (پایین جدول اصلی)
+#             last_data_row = ws.max_row
+
+#             # ما مقدار را در همان ردیف last_data_row می‌نویسیم
+#             # چون OPERATOR و ENGINEER باید در همان ردیف شیفت باشند
+
+#             # نوشتن اسم اپراتور
+#             self.write_value(ws, f"A{last_data_row}", 'operator', operator, selected_time)
+#             self.write_value(ws, f"A{last_data_row}", 'engineer', engineer, selected_time)
+
+# # -----------------------------------
+
+#             wb.save(output_path)
+#             print(f"✅ داده‌ها با موفقیت در {output_path} ذخیره شدند")
+            
+#             # نمایش اطلاعات فایل
+#             file_size = os.path.getsize(output_path) / 1024  # به کیلوبایت
+#             print(f"📊 حجم فایل: {file_size:.2f} KB")
+#             print(f"🕒 زمان ذخیره‌سازی: {datetime.now().strftime('%H:%M:%S')}")
+            
+#             return True
+            
+#         except Exception as e:
+#             print(f"❌ خطا در ذخیره داده‌ها: {str(e)}")
+#             import traceback
+#             traceback.print_exc()
+#             return False
     
 
-    def check_existing_file(self, date_str=None):
-        """بررسی اگر فایل با تاریخ مشخص وجود دارد"""
-        if date_str is None:
-            date_str = datetime.now().strftime("%Y-%m-%d")
-        
-        output_path = os.path.join(self.save_dir, f"GT_Log_{date_str}.xlsx")
-        
-        if os.path.exists(output_path):
-            # اطلاعات فایل موجود
-            file_size = os.path.getsize(output_path) / 1024
-            mod_time = datetime.fromtimestamp(os.path.getmtime(output_path))
-            
-            print(f"✅ فایل موجود: {output_path}")
-            print(f"📊 حجم: {file_size:.2f} KB")
-            print(f"🕒 آخرین تغییر: {mod_time.strftime('%Y-%m-%d %H:%M:%S')}")
-            
-            return output_path, True
-        else:
-            print(f"❌ فایل برای تاریخ {date_str} یافت نشد")
-            return output_path, False
+        from openpyxl.cell.cell import MergedCell
+        from openpyxl.utils import get_column_letter
 
-    def get_worksheet(self, wb, device_name):
-        """پیدا کردن شیت با تطبیق انعطاف‌پذیر نام"""
-        try:
-            # اول نام دقیق رو چک کن
-            if device_name in wb.sheetnames:
-                return wb[device_name]
-            
-            # اگر دقیق پیدا نشد، به صورت case-insensitive جستجو کن
-            device_lower = device_name.lower()
-            for sheet_name in wb.sheetnames:
-                if sheet_name.lower() == device_lower:
-                    return wb[sheet_name]
-            
-            # اگر هنوز پیدا نشد، جستجوی partial انجام بده
-            for sheet_name in wb.sheetnames:
-                if device_lower in sheet_name.lower():
-                    print(f"✅ شیت مشابه پیدا شد: '{sheet_name}' برای دستگاه '{device_name}'")
-                    return wb[sheet_name]
-            
-            # همه شیت‌ها رو برای دیباگ نمایش بده
-            print(f"📋 تمام شیت‌های موجود: {wb.sheetnames}")
-            return wb[wb.sheetnames[0]]
-            
-        except Exception as e:
-            print(f"❌ خطا در پیدا کردن شیت: {e}")
-            return wb[wb.sheetnames[0]]
+        # ───────────────── helper ─────────────────
+    # def get_real_cell(row, col):
+    #             cell = ws.cell(row=row, column=col)
+    #             if isinstance(cell, MergedCell):
+    #                 for mr in ws.merged_cells.ranges:
+    #                     if mr.min_row <= row <= mr.max_row and mr.min_col <= col <= mr.max_col:
+    #                         return ws.cell(row=mr.min_row, column=mr.min_col)
+    #             return cell
+
+    #         # ───────── 1️⃣ پیدا کردن ردیف NIGHT / DAY / NIGHT ─────────
+    #         shift_row = None
+    #         for r in range(1, ws.max_row + 1):
+    #             values = [
+    #                 str(ws.cell(r, c).value).strip().upper()
+    #                 if ws.cell(r, c).value else ""
+    #                 for c in range(1, ws.max_column + 1)
+    #             ]
+    #             if values.count("NIGHT SHIFT") >= 2 and "DAY SHIFT" in values:
+    #                 shift_row = r
+    #                 break
+
+    #         if not shift_row:
+    #             print("❌ ردیف شیفت‌ها پیدا نشد")
+    #             return
+
+    #         # ───────── 2️⃣ ستون شروع هر شیفت ─────────
+    #         night_cols = []
+    #         day_col = None
+
+    #         for c in range(1, ws.max_column + 1):
+    #             v = ws.cell(shift_row, c).value
+    #             if isinstance(v, str):
+    #                 t = v.strip().upper()
+    #                 if t == "NIGHT SHIFT":
+    #                     night_cols.append(c)
+    #                 elif t == "DAY SHIFT":
+    #                     day_col = c
+
+    #         if len(night_cols) < 2 or not day_col:
+    #             print("❌ ستون‌های شیفت کامل نیست")
+    #             return
+
+    #         night1_col = night_cols[0]
+    #         night2_col = night_cols[1]
+
+    #         # ───────── 3️⃣ تشخیص شیفت بر اساس ساعت ─────────
+    #         hour = int(selected_time.split(":")[0])
+
+    #         if hour in (0, 4):
+    #             base_col = night1_col
+    #             shift_name = "NIGHT 1"
+    #         elif hour in (8, 12, 16):
+    #             base_col = day_col
+    #             shift_name = "DAY"
+    #         elif hour == 20:
+    #             base_col = night2_col
+    #             shift_name = "NIGHT 2"
+    #         else:
+    #             print("⚠️ ساعت نامعتبر:", selected_time)
+    #             return
+
+    #         # ───────── 4️⃣ ردیف‌ها ─────────
+    #         label_row = shift_row + 1        # OPERATOR / ENGINEER
+    #         value_row = label_row + 1        # ردیف نوشتن نام‌ها
+
+    #         # ───────── 5️⃣ فقط داخل بلاک همان شیفت ستون‌ها را پیدا کن ─────────
+    #         op_col = eng_col = None
+    #         for c in range(base_col, base_col + 4):
+    #             txt = ws.cell(label_row, c).value
+    #             if isinstance(txt, str):
+    #                 t = txt.strip().upper()
+    #                 if t == "OPERATOR":
+    #                     op_col = c
+    #                 elif t == "ENGINEER":
+    #                     eng_col = c
+
+    #         if not op_col or not eng_col:
+    #             print("❌ ستون OPERATOR / ENGINEER پیدا نشد")
+    #             return
+
+    #         # ───────── 6️⃣ نوشتن امن داخل merged cell ─────────
+    #         get_real_cell(value_row, op_col).value = operator
+    #         get_real_cell(value_row, eng_col).value = engineer
+
+    #         print(
+    #             f"✔ {shift_name} | {selected_time} → "
+    #             f"OPERATOR={operator} ({get_column_letter(op_col)}{value_row}) , "
+    #             f"ENGINEER={engineer} ({get_column_letter(eng_col)}{value_row})"
+    #         )    
+
+
+
+
+    def write_shift_info(self, ws, selected_time, operator, engineer):
+        from openpyxl.cell.cell import MergedCell
+
+        def norm(v):
+            return str(v).strip().upper() if v else ""
+
+        def real_cell(row, col):
+            cell = ws.cell(row=row, column=col)
+            if isinstance(cell, MergedCell):
+                for r in ws.merged_cells.ranges:
+                    if r.min_row <= row <= r.max_row and r.min_col <= col <= r.max_col:
+                        return ws.cell(r.min_row, r.min_col)
+            return cell
+
+        hour = int(selected_time.split(":")[0])
+
+        # 🔍 الگوی موردنظر بر اساس ساعت
+        if hour in (0, 4):
+            op_key = ".OPERATOR"
+            eng_key = ".ENGINEER"
+        elif hour in (8, 12, 16):
+            op_key = "OPERATOR"
+            eng_key = "ENGINEER"
+        elif hour == 20:
+            op_key = "OPERATOR."
+            eng_key = "ENGINEER."
+        else:
+            print("❌ ساعت نامعتبر")
+            return
+
+        label_row = None
+
+        # 1️⃣ پیدا کردن ردیفی که ENGINEER / OPERATOR داخلش هستند
+        for r in range(1, ws.max_row + 1):
+            for c in range(1, ws.max_column + 1):
+                v = norm(ws.cell(r, c).value)
+                if v in (op_key, eng_key):
+                    label_row = r
+                    break
+            if label_row:
+                break
+
+        if not label_row:
+            print("❌ ردیف عنوان OPERATOR / ENGINEER پیدا نشد")
+            return
+
+        value_row = label_row + 1
+        op_col = eng_col = None
+
+        # 2️⃣ پیدا کردن ستون‌های دقیق
+        for c in range(1, ws.max_column + 1):
+            v = norm(ws.cell(label_row, c).value)
+            if v == op_key:
+                op_col = c
+            elif v == eng_key:
+                eng_col = c
+
+        if not op_col or not eng_col:
+            print("❌ ستون OPERATOR یا ENGINEER پیدا نشد")
+            return
+
+        # 3️⃣ نوشتن مقادیر (حتی اگر merge باشد)
+        real_cell(value_row, op_col).value = engineer
+        real_cell(value_row, eng_col).value = operator
+
+        print(
+            f"✔ {selected_time} → "
+            f"OPERATOR={operator}, ENGINEER={engineer}"
+        )
+
+    # def write_shift_info(self, ws, selected_time, operator, engineer):
+    #     def norm(v):
+    #         return str(v).strip().upper() if v else ""
+
+    #     def find_write_row(ws, start_row, col):
+    #         r = start_row
+    #         while r <= ws.max_row:
+    #             v = ws.cell(r, col).value
+    #             if v and "COMMENT" in str(v).upper():
+    #                 return None
+    #             if v in (None, ""):
+    #                 return r
+    #             r += 1
+    #         return None
+
+    #     hour = int(selected_time.split(":")[0])
+
+    #     if hour in (0, 4):        # NIGHT SHIFT اول
+    #         mapping = {
+    #             ".OPERATOR": engineer,
+    #             ".ENGINEER": operator,
+    #         }
+    #     elif hour in (8, 12, 16):  # DAY SHIFT
+    #         mapping = {
+    #             "OPERATOR": operator,
+    #             "ENGINEER": engineer,
+    #         }
+    #     elif hour == 20:          # NIGHT SHIFT دوم
+    #         mapping = {
+    #             "OPERATOR.": operator,
+    #             "ENGINEER.": engineer,
+    #         }
+    #     else:
+    #         return
+
+    #     for r in range(1, ws.max_row + 1):
+    #         for c in range(1, ws.max_column + 1):
+    #             key = norm(ws.cell(r, c).value)
+    #             if key in mapping:
+    #                 write_row = find_write_row(ws, r + 1, c)
+    #                 if write_row:
+    #                     ws.cell(write_row, c).value = mapping[key]
+
+    #     print("✔ Operator / Engineer ذخیره شد | Comment کاملاً امن ماند")
+
+
+   
+
+    
+
+    # def get_worksheet(self, wb, device_name):
+    #         """پیدا کردن شیت با تطبیق انعطاف‌پذیر نام"""
+    #         try:
+    #             # اول نام دقیق رو چک کن
+    #             if device_name in wb.sheetnames:
+    #                 return wb[device_name]
+                
+    #             # اگر دقیق پیدا نشد، به صورت case-insensitive جستجو کن
+    #             device_lower = device_name.lower()
+    #             for sheet_name in wb.sheetnames:
+    #                 if sheet_name.lower() == device_lower:
+    #                     return wb[sheet_name]
+                
+    #             # اگر هنوز پیدا نشد، جستجوی partial انجام بده
+    #             for sheet_name in wb.sheetnames:
+    #                 if device_lower in sheet_name.lower():
+    #                     print(f"✅ شیت مشابه پیدا شد: '{sheet_name}' برای دستگاه '{device_name}'")
+    #                     return wb[sheet_name]
+                
+    #             # همه شیت‌ها رو برای دیباگ نمایش بده
+    #             print(f"📋 تمام شیت‌های موجود: {wb.sheetnames}")
+    #             return wb[wb.sheetnames[0]]
+                
+    #         except Exception as e:
+    #             print(f"❌ خطا در پیدا کردن شیت: {e}")
+    #             return wb[wb.sheetnames[0]]
 
 
     def _get_merged_cell_value(self, worksheet, row, col):
@@ -468,6 +752,262 @@ class ExcelHandler:
         except Exception as e:
             print(f"❌ خطا در پیدا کردن سطر فیلد: {e}")
             return None
+
+
+
+
+    # def get_shift_by_time(time_str):
+    #     hour = int(time_str.split(":")[0])
+
+    #     if hour in [0, 4]:
+    #         return "night_left"
+    #     elif hour in [8, 12, 16]:
+    #         return "day"
+    #     elif hour == 20:
+    #         return "night_right"
+    #     else:
+    #         raise ValueError("Unknown time! Should be 0,4,8,12,16,20")
+
+    # def find_shift_columns(sheet):
+    #     shift_row = None
+    #     shift_cols = {
+    #         "night_left": None,
+    #         "day": None,
+    #         "night_right": None
+    #     }
+
+    #     # 1) پیدا کردن ردیف شیفت‌ها
+    #     for row in sheet.iter_rows(min_row=1, max_row=50):
+    #         for cell in row:
+    #             if cell.value in ["NIGHT SHIFT", "DAY SHIFT"]:
+    #                 shift_row = cell.row
+    #                 break
+    #         if shift_row:
+    #             break
+
+    #     if not shift_row:
+    #         raise ValueError("Shift row not found!")
+
+    #     # 2) پیدا کردن ستون‌های سه شیفت
+    #     for cell in sheet[shift_row]:
+    #         if cell.value == "NIGHT SHIFT":
+    #             if shift_cols["night_left"] is None:
+    #                 shift_cols["night_left"] = cell.column
+    #             else:
+    #                 shift_cols["night_right"] = cell.column
+
+    #         elif cell.value == "DAY SHIFT":
+    #             shift_cols["day"] = cell.column
+
+    #     # 3) ردیف اپراتور/مهندس = یک ردیف پایین‌تر
+    #     operator_row = shift_row + 1
+
+    #     return shift_cols, shift_row, operator_row
+
+
+    # def write_value(sheet, description_cell, value, time_str):
+    #     shift_cols, shift_row, operator_row =find_shift_columns(sheet)
+    #     shift_key = get_shift_by_time(time_str)
+    #     target_col = shift_cols[shift_key]
+
+    # # same row as description
+    #     row = description_cell.row
+
+    # # نوشتن مقدار در سلول صحیح
+    #     sheet.cell(row=row, column=target_col).value = value
+
+
+    def _resolve_merged_cell(ws, cell):
+        """اگر cell یک MergedCell هست، سلول بالا-چپِ محدودهٔ merge رو برگردون."""
+        if isinstance(cell, MergedCell):
+            for mr in ws.merged_cells.ranges:
+                if mr.min_row <= cell.row <= mr.max_row and mr.min_col <= cell.column <= mr.max_col:
+                    return ws.cell(row=mr.min_row, column=mr.min_col)
+        return cell
+
+    def find_shift_columns(ws):
+        """
+        دنبال ردیفِ header می‌گرده (شامل 'NIGHT SHIFT' یا 'DAY SHIFT') و
+        ستون‌های OPERATOR و ENGINEER رو برای left/day/right برمی‌گردونه.
+        خروجی: (shift_cols, header_row, operator_header_row)
+        shift_cols = {
+        'night_left': {'operator': col_index, 'engineer': col_index},
+        'day': {'operator': col_index, 'engineer': col_index},
+        'night_right': {'operator': col_index, 'engineer': col_index},
+        }
+        """
+        shift_cols = {
+            'night_left': {'operator': None, 'engineer': None},
+            'day': {'operator': None, 'engineer': None},
+            'night_right': {'operator': None, 'engineer': None},
+        }
+        header_row = None
+
+        # ابتدا ردیفی که شامل NIGHT SHIFT / DAY SHIFT هست رو پیدا کن
+        for r in range(1, ws.max_row + 1):
+            row_text = " ".join(
+                str(ws.cell(r, c).value or "").strip().lower() for c in range(1, min(20, ws.max_column) + 1)
+            )
+            if 'night shift' in row_text or 'day shift' in row_text:
+                header_row = r
+                break
+
+        if not header_row:
+            # fallback: اگر پیدا نشد، سعی کن ردیف پایین‌تر یا بالا رو چک کنی (کاربر گفت ممکنه متفاوت باشه)
+            header_row = max(1, ws.max_row - 20)
+
+        # در ردیف بعدی معمولاً سلول‌های OPERATOR / ENGINEER مرج شده قرار دارن.
+        # پس چند ردیف پایین‌تر را اسکن می‌کنیم تا عناوین OPERATOR/ENGINEER را پیدا کنیم.
+        search_start = header_row + 1
+        search_end = min(ws.max_row, header_row + 6)
+
+        # ذخیرهٔ candidate ها به ترتیب از چپ به راست
+        candidates = []
+        for c in range(1, ws.max_column + 1):
+            for r in range(search_start, search_end + 1):
+                val = ws.cell(r, c).value
+                if val and isinstance(val, str):
+                    txt = val.strip().lower()
+                    if txt in ('operator', 'engineer'):
+                        candidates.append((c, r, txt))
+        # حالا بر اساس موقعیت candidates را به سه گروه تقسیم میکنیم (left, mid, right)
+        if candidates:
+            # گروه‌بندی بر اساس ستون
+            cols = sorted(set(c for c, r, t in candidates))
+            if not cols:
+                return shift_cols, header_row, search_start
+
+            # تقسیم سه ناحیه: left (اولی)، mid (وسط)، right (آخر)
+            # اگر کمتر از 3 ستون باشه، سعی می‌کنیم مطابق ترتیب قرار بدیم
+            unique_cols = cols
+            if len(unique_cols) == 1:
+                # همهٔ OPERATOR/ENGINEER فقط در یک ناحیه است — قرار میدیم در day
+                left_col = mid_col = right_col = unique_cols[0]
+            elif len(unique_cols) == 2:
+                left_col = unique_cols[0]
+                mid_col = unique_cols[1]
+                right_col = unique_cols[1]
+            else:
+                left_col = unique_cols[0]
+                mid_col = unique_cols[len(unique_cols)//2]
+                right_col = unique_cols[-1]
+
+            # حالا به ازای هر candidate قرارشون در منطقه مناسب بگذار
+            for c, r, txt in candidates:
+                # تعیین ناحیه
+                if c <= (left_col + mid_col) // 2:
+                    region = 'night_left'
+                elif c >= (mid_col + right_col) // 2:
+                    region = 'night_right'
+                else:
+                    region = 'day'
+
+                if txt == 'operator':
+                    shift_cols[region]['operator'] = c
+                elif txt == 'engineer':
+                    shift_cols[region]['engineer'] = c
+
+        return shift_cols, header_row, search_start
+
+    def get_shift_by_time(time_str):
+        # normalize
+        if ":" in time_str:
+            h = time_str.split(":")[0]
+        else:
+            h = str(time_str)
+        h = h.lstrip("0") or "0"
+        try:
+            hh = int(h)
+        except:
+            return None
+
+        if hh in (0, 4):
+            return 'night_left'
+        if hh in (8, 12, 16):
+            return 'day'
+        if hh == 20:
+            return 'night_right'
+        return None
+
+    def write_value(self, ws, description_cell_coord, role, value, time_str):
+        """
+        ws: worksheet
+        description_cell_coord: نمونه "A17" — از این سلول ردیف هدف گرفته میشه
+        role: 'operator' یا 'engineer'
+        value: رشته‌ای که باید نوشته بشه
+        time_str: مثلاً "08:00" یا "8:00" یا "20:00"
+        """
+
+        # نرمال‌سازی زمان -> فقط ساعت بصورت عددی (بدون صفر پیشرو)
+        if time_str is None:
+            print("❌ write_value: time_str is None")
+            return
+
+        if ":" in str(time_str):
+            hour = str(time_str).split(":")[0]
+        else:
+            hour = str(time_str)
+
+        hour = hour.lstrip("0") or "0"   # "08" -> "8", "00" -> "0"
+
+        # تعیین ستون‌های هدف بر پایه ساعت
+        # هر ورودی mapping -> (operator_col, engineer_col)
+        shift_map = {
+            ('0', '4'): ('B', 'C'),      # NIGHT LEFT
+            ('8', '12', '16'): ('E', 'F'), # DAY SHIFT
+            ('20',): ('H', 'I')         # NIGHT RIGHT
+        }
+
+        target_cols = None
+        for keys, cols in shift_map.items():
+            if hour in keys:
+                target_cols = cols
+                break
+
+        if target_cols is None:
+            print("❌ write_value: ساعت نامعتبر:", time_str)
+            return
+
+        # انتخاب ستون براساس نقش
+        if role == 'operator':
+            target_col_letter = target_cols[0]
+        elif role == 'engineer':
+            target_col_letter = target_cols[1]
+        else:
+            print("❌ write_value: role نامعتبر:", role)
+            return
+
+        # پیدا کردن ردیف از description_cell_coord
+        try:
+            description_cell = ws[description_cell_coord]
+            target_row = description_cell.row
+        except Exception:
+            # اگر coord اشتباه باشه سعی کن عدد انتهای رشته رو استخراج کنی
+            import re
+            m = re.search(r'(\d+)$', str(description_cell_coord))
+            if m:
+                target_row = int(m.group(1))
+            else:
+                target_row = ws.max_row
+
+        target_coord = f"{target_col_letter}{target_row}"
+        # اگر سلول target، یک MergedCell باشه باید به سلول بالا-چپ merge رفته و مقدار رو اونجا بنویسیم
+        from openpyxl.cell.cell import MergedCell
+        cell_obj = ws[target_coord]
+        if isinstance(cell_obj, MergedCell):
+            # پیدا کردن محدوده merge و گرفتن سلول بالا-چپ
+            for mr in ws.merged_cells.ranges:
+                if mr.min_row <= cell_obj.row <= mr.max_row and mr.min_col <= cell_obj.column <= mr.max_col:
+                    real = ws.cell(row=mr.min_row, column=mr.min_col)
+                    real.value = value
+                    # اگر لازم بود می‌تونیم style هم منتقل کنیم
+                    return
+            # اگر نیافتیم fallback:
+            ws[target_coord].value = value
+        else:
+            ws[target_coord].value = value
+
+
 
     def debug_time_row(self, worksheet):
         """برای دیباگ کردن سطر اول (زمان‌ها)"""
