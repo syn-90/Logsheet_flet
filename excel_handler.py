@@ -1,6 +1,7 @@
 import os
 import shutil
 import sys
+import re
 from datetime import datetime
 import openpyxl
 from openpyxl.utils import get_column_letter
@@ -70,13 +71,23 @@ class ExcelHandler:
             # انتخاب شیت دستگاه
             device_name = form_data.get('device', 'General')
             print(f"📊 دستگاه انتخاب شده: {device_name}")
+
+            ws = self.get_worksheet(wb, device_name)
+#موقت
+            print("\nDEBUG: تمام نام‌های بخش‌های ممکن در شیت:")
+            for r in range(1, min(80, ws.max_row + 1)):
+                for c in range(1, min(6, ws.max_column + 1)):  # ستون‌های اول معمولاً نام بخش
+                    val = self._get_merged_cell_value(ws, r, c)
+                    if val and isinstance(val, str) and len(val.strip()) > 2:
+                        print(f"  row {r:3d} | col {c:2d} ({get_column_letter(c)}) → {val.strip()}")
+
             
-            if device_name in wb.sheetnames:
-                ws = wb[device_name]
-                print(f"✅ شیت {device_name} پیدا شد")
-            else:
-                print(f"⚠ شیت {device_name} یافت نشد، استفاده از اولین شیت")
-                ws = wb[wb.sheetnames[0]]
+            # if device_name in wb.sheetnames:
+            #     ws = wb[device_name]
+            #     print(f"✅ شیت {device_name} پیدا شد")
+            # else:
+            #     print(f"⚠ شیت {device_name} یافت نشد، استفاده از اولین شیت")
+            #     ws = wb[wb.sheetnames[0]]
             
             # پیدا کردن ستون زمان
             time_value = form_data.get('time')
@@ -114,16 +125,17 @@ class ExcelHandler:
             print(f"📝 بخش‌های برای پردازش: {list(sections_data.keys())}")
             
             for section_name, fields in sections_data.items():
-                print(f"\n🎯 پردازش بخش: {section_name}")
-                
+                print(f"\n→ تلاش برای بخش: {section_name}")
                 section_position = self._find_exact_section_position(ws, section_name)
                 if not section_position:
-                    print(f"⚠ بخش {section_name} در اکسل یافت نشد")
+                    print(f"   ✘ بخش پیدا نشد → رد شد")
                     continue
-                
+            
+                print(f"   ✓ بخش پیدا شد در row {section_position['section_row']}")
+            
                 field_column = self._find_field_column_near_section(ws, section_position)
                 if not field_column:
-                    print(f"⚠ ستون فیلدها برای بخش {section_name} یافت نشد")
+                    print(f"   ✘ ستون فیلد پیدا نشد → رد شد")
                     continue
                 
                 for field_name, field_value in fields.items():
@@ -132,7 +144,8 @@ class ExcelHandler:
                         current_value = ws.cell(row=field_row, column=time_col).value
                         if current_value is not None:
                             print(f"    ⚠ سلول ({field_row},{time_col}) قبلاً پر بود: '{current_value}' → جایگزینی")
-                        ws.cell(row=field_row, column=time_col, value=field_value)
+                        # ws.cell(row=field_row, column=time_col, value=field_value)
+                        self._safe_write(ws, field_row, time_col, field_value)
                         print(f"    ✅ {field_name} = {field_value} ذخیره شد")
                     else:
                         print(f"    ❌ سطر فیلد {field_name} یافت نشد")
@@ -183,11 +196,56 @@ class ExcelHandler:
             print(f"❌ خطا در ذخیره داده‌ها: {str(e)}")
             import traceback
             traceback.print_exc()
-            return False    
+            return False
 
+    def _safe_write(self, ws, row, col, value):
+        """نوشتن امن در سلول - اگر merge باشد، در سلول اصلی (بالا-چپ) می‌نویسد"""
+        cell = ws.cell(row=row, column=col)
 
+        if isinstance(cell, openpyxl.cell.cell.MergedCell):
+            for merged_range in ws.merged_cells.ranges:
+                if (merged_range.min_row <= row <= merged_range.max_row and
+                        merged_range.min_col <= col <= merged_range.max_col):
+                    target_cell = ws.cell(
+                        row=merged_range.min_row,
+                        column=merged_range.min_col
+                    )
+                    target_cell.value = value
+                    print(f"   (merge) → نوشته شد در اصلی: ردیف {merged_range.min_row}, ستون {merged_range.min_col}")
+                    return
+            # اگر به هر دلیلی پیدا نشد
+            print("   ⚠ محدوده merge پیدا نشد - تلاش مستقیم")
+            cell.value = value  # این خط معمولاً نباید اجرا شود
 
+        else:
+            cell.value = value
+    def get_worksheet(self, wb, device_name):
+        print(f"🔍 جستجوی شیت برای دستگاه: {device_name}")
 
+        target = self.smart_normalize(device_name)
+
+        best_match = None
+        best_score = 0
+
+        for sheet_name in wb.sheetnames:
+            norm_sheet = self.smart_normalize(sheet_name)
+
+            target_words = set(target.split())
+            sheet_words = set(norm_sheet.split())
+
+            common = target_words & sheet_words
+            score = len(common)
+
+            if score > best_score:
+                best_score = score
+                best_match = sheet_name
+
+        if best_match:
+            print(f"✅ شیت match شد → {best_match}")
+            return wb[best_match]
+
+        print("⚠ هیچ شیتی match نشد → اولین شیت")
+        return wb[wb.sheetnames[0]]
 
 
     def write_shift_comment(self, ws, selected_time, comment_text):
@@ -422,77 +480,244 @@ class ExcelHandler:
     #             return wb[wb.sheetnames[0]]
 
 
+    # def _get_merged_cell_value(self, worksheet, row, col):
+    #     for mr in worksheet.merged_cells.ranges:
+    #         if mr.min_row <= row <= mr.max_row and mr.min_col <= col <= mr.max_col:
+    #             return worksheet.cell(row=mr.min_row, column=mr.min_col).value
+    #     return worksheet.cell(row=row, column=col).value
+
+    
     def _get_merged_cell_value(self, worksheet, row, col):
-        for mr in worksheet.merged_cells.ranges:
-            if mr.min_row <= row <= mr.max_row and mr.min_col <= col <= mr.max_col:
-                return worksheet.cell(row=mr.min_row, column=mr.min_col).value
-        return worksheet.cell(row=row, column=col).value
+        from openpyxl.cell.cell import MergedCell
+
+        cell = worksheet.cell(row=row, column=col)
+
+        if isinstance(cell, MergedCell):
+            for mr in worksheet.merged_cells.ranges:
+                if mr.min_row <= row <= mr.max_row and mr.min_col <= col <= mr.max_col:
+                    return worksheet.cell(row=mr.min_row, column=mr.min_col).value
+
+        return cell.value
+
+
+    def smart_normalize(self, text):
+    
+        if not text:
+            return ""
+        
+        text = str(text).lower()
+
+        text = text.replace("&", " and ")
+        text = text.replace("\n", " ").replace("\r", " ")
+
+        text = re.sub(r"[^\w\s]", " ", text)
+        text = " ".join(text.split())
+
+        return text
+
+
+    def _text_to_words(self, text):
+        norm = self._smart_normalize(text)
+        return set(norm.split())
+
+    def _smart_match(self, cell_text, field_text):
+        cell_words = self._text_to_words(cell_text)
+        field_words = self._text_to_words(field_text)
+
+        if not cell_words or not field_words:
+            return False
+
+        # اگر بیشتر کلمات مشترک باشند → match
+        common = cell_words & field_words
+        similarity = len(common) / len(field_words)
+
+        return similarity >= 0.6   # آستانه تطبیق (60%)
+
+    # def _find_exact_field_row(self, worksheet, field_name, section_position, field_column):
+    #     """
+    #     جستجو برای نام فیلد در ستون field_column؛
+    #     شروع از همان ردیف section_position['section_row'] (در صورت قرار گرفتن فیلد روی همان ردیف)
+    #     و استفاده از _get_merged_cell_value برای خواندن صحیح مقادیر merge شده.
+    #     """
+    #     try:
+    #         section_row = section_position['section_row']
+    #         mapped_name = self.map_field_name(field_name)
+    #         search_str = str(mapped_name).lower()
+
+    #         print(f"🔍 پیدا کردن فیلد '{field_name}' near بخش در سطر {section_row}")
+
+    #         # از خود سطر بخش شروع کن (نه سطر بعدی)
+    #         start_row = section_row
+    #         end_row = min(section_row + 20, worksheet.max_row)  # محدودهٔ جستجو تا ۲۰ سطر پایین‌تر
+
+    #         for row in range(start_row, end_row + 1):
+    #             cell_value = self._get_merged_cell_value(worksheet, row, field_column)
+
+    #             if cell_value:
+    #                 cell_str = str(cell_value).lower().replace(" ", "")
+    #                 search_clean = search_str.lower().replace(" ", "")
+
+    #                 if search_clean in cell_str:
+    #                     print(f"✅ فیلد '{mapped_name}' در سطر {row} پیدا شد: '{cell_value}'")
+    #                     return row
+
+
+    #         print(f"❌ فیلد '{field_name}' در محدوده بخش یافت نشد")
+    #         return None
+
+    #     except Exception as e:
+    #         print(f"❌ خطا در پیدا کردن فیلد: {e}")
+    #         return None
 
 
     def _find_exact_field_row(self, worksheet, field_name, section_position, field_column):
-        """
-        جستجو برای نام فیلد در ستون field_column؛
-        شروع از همان ردیف section_position['section_row'] (در صورت قرار گرفتن فیلد روی همان ردیف)
-        و استفاده از _get_merged_cell_value برای خواندن صحیح مقادیر merge شده.
-        """
         try:
             section_row = section_position['section_row']
             mapped_name = self.map_field_name(field_name)
-            search_str = str(mapped_name).lower()
 
-            print(f"🔍 پیدا کردن فیلد '{field_name}' near بخش در سطر {section_row}")
+            target = self.smart_normalize(mapped_name)
 
-            # از خود سطر بخش شروع کن (نه سطر بعدی)
+            print(f"🔍 جستجوی هوشمند فیلد '{field_name}' از سطر {section_row}")
+
             start_row = section_row
-            end_row = min(section_row + 20, worksheet.max_row)  # محدودهٔ جستجو تا ۲۰ سطر پایین‌تر
+            end_row = min(section_row + 30, worksheet.max_row)
+
+            best_match = None
+            best_score = 0
 
             for row in range(start_row, end_row + 1):
                 cell_value = self._get_merged_cell_value(worksheet, row, field_column)
 
-                if cell_value:
-                    cell_str = str(cell_value).lower()
-                    if search_str in cell_str:
-                        print(f"✅ فیلد '{mapped_name}' در سطر {row} پیدا شد: '{cell_value}'")
-                        return row
+                if not cell_value:
+                    continue
 
-            print(f"❌ فیلد '{field_name}' در محدوده بخش یافت نشد")
+                cell_norm = self.smart_normalize(cell_value)
+
+                target_words = set(target.split())
+                cell_words = set(cell_norm.split())
+
+                common = target_words & cell_words
+                score = len(common)
+
+                if score > best_score:
+                    best_score = score
+                    best_match = row
+
+            if best_match and best_score >= 1:
+                print(f"✅ فیلد پیدا شد → سطر {best_match}")
+                return best_match
+
+            print(f"❌ فیلد '{field_name}' پیدا نشد")
             return None
 
         except Exception as e:
             print(f"❌ خطا در پیدا کردن فیلد: {e}")
             return None
 
+
+    # def _find_exact_section_position(self, worksheet, section_name):
+    #     """پیدا کردن موقعیت دقیق یک بخش در اکسل"""
+    #     try:
+    #         print(f"🔍 پیدا کردن موقعیت دقیق بخش: {section_name}")
+            
+    #         # ابتدا به دنبال نام دقیق بخش بگرد
+    #         for row in range(1, worksheet.max_row + 1):
+    #             for col in range(1, worksheet.max_column + 1):
+    #                 cell_value = worksheet.cell(row=row, column=col).value
+                    
+    #                 if cell_value and str(cell_value).strip().lower() == section_name.lower():
+    #                     print(f"✅ بخش {section_name} در سطر {row}, ستون {col} پیدا شد")
+    #                     return {'section_row': row, 'section_col': col}
+            
+    #         # اگر نام دقیق پیدا نشد، به دنبال بخشی بگرد که شامل این نام باشد
+    #         for row in range(1, worksheet.max_row + 1):
+    #             for col in range(1, worksheet.max_column + 1):
+    #                 cell_value = worksheet.cell(row=row, column=col).value
+                    
+    #                 if cell_value and section_name.lower() in str(cell_value).lower():
+    #                     print(f"✅ بخش مشابه {section_name} در سطر {row}, ستون {col} پیدا شد: '{cell_value}'")
+    #                     return {'section_row': row, 'section_col': col}
+            
+    #         print(f"❌ بخش {section_name} یافت نشد")
+    #         return None
+            
+    #     except Exception as e:
+    #         print(f"❌ خطا در پیدا کردن موقعیت بخش: {e}")
+    #         return None
+
+
+    #نسخه اصلی !!!!!!!!!!!!!!!!!!!!!!
+    # def _find_exact_section_position(self, worksheet, section_name):
+    #     print(f"🔍 جستجوی هوشمند بخش: {section_name}")
+
+    #     target = self.smart_normalize(section_name)
+
+    #     best_match = None
+    #     best_score = 0
+
+    #     for row in range(1, worksheet.max_row + 1):
+    #         for col in range(1, worksheet.max_column + 1):
+    #             cell_value = self._get_merged_cell_value(worksheet, row, col)
+
+    #             if not cell_value:
+    #                 continue
+
+    #             cell_norm = self.smart_normalize(cell_value)
+
+    #             target_words = set(target.split())
+    #             cell_words = set(cell_norm.split())
+
+    #             common = target_words & cell_words
+    #             score = len(common)
+
+    #             if score > best_score:
+    #                 best_score = score
+    #                 best_match = (row, col, cell_value)
+
+    #     if best_match and best_score >= 2:
+    #         row, col, txt = best_match
+    #         print(f"✅ بخش پیدا شد → سطر {row}, ستون {col} : '{txt}'")
+    #         return {'section_row': row, 'section_col': col}
+
+    #     print(f"❌ بخش '{section_name}' پیدا نشد")
+    #     return None
+
+
+    #موقت
     def _find_exact_section_position(self, worksheet, section_name):
-        """پیدا کردن موقعیت دقیق یک بخش در اکسل"""
-        try:
-            print(f"🔍 پیدا کردن موقعیت دقیق بخش: {section_name}")
-            
-            # ابتدا به دنبال نام دقیق بخش بگرد
-            for row in range(1, worksheet.max_row + 1):
-                for col in range(1, worksheet.max_column + 1):
-                    cell_value = worksheet.cell(row=row, column=col).value
-                    
-                    if cell_value and str(cell_value).strip().lower() == section_name.lower():
-                        print(f"✅ بخش {section_name} در سطر {row}, ستون {col} پیدا شد")
-                        return {'section_row': row, 'section_col': col}
-            
-            # اگر نام دقیق پیدا نشد، به دنبال بخشی بگرد که شامل این نام باشد
-            for row in range(1, worksheet.max_row + 1):
-                for col in range(1, worksheet.max_column + 1):
-                    cell_value = worksheet.cell(row=row, column=col).value
-                    
-                    if cell_value and section_name.lower() in str(cell_value).lower():
-                        print(f"✅ بخش مشابه {section_name} در سطر {row}, ستون {col} پیدا شد: '{cell_value}'")
-                        return {'section_row': row, 'section_col': col}
-            
-            print(f"❌ بخش {section_name} یافت نشد")
-            return None
-            
-        except Exception as e:
-            print(f"❌ خطا در پیدا کردن موقعیت بخش: {e}")
-            return None
+        print(f"🔍 جستجوی بخش: '{section_name}'")
 
+        target = self.smart_normalize(section_name)
 
+        best_match = None
+        best_score = 0
+
+        for row in range(1, worksheet.max_row + 1):
+            for col in range(1, min(10, worksheet.max_column + 1)):  # جستجو در ستون‌های بیشتر
+                cell_value = self._get_merged_cell_value(worksheet, row, col)
+                if not cell_value:
+                    continue
+
+                cell_norm = self.smart_normalize(cell_value)
+
+                target_words = set(target.split())
+                cell_words = set(cell_norm.split())
+
+                common = target_words & cell_words
+                score = len(common)
+
+                if score > best_score:
+                    best_score = score
+                    best_match = (row, col, cell_value)
+
+        # آستانه را خیلی پایین آوردیم تا تست راحت‌تر باشد
+        if best_match and best_score >= 1:   # ← اینجا 1 یا حتی 0.5 تست کن
+            row, col, txt = best_match
+            print(f"✅ پیدا شد → row {row}, col {col} : '{txt}' (score={best_score})")
+            return {'section_row': row, 'section_col': col}
+
+        print(f"❌ بخش پیدا نشد (بهترین score = {best_score})")
+        return None
     def _find_field_column_near_section(self, worksheet, section_position):
         """پیدا کردن ستون فیلدها در نزدیکی بخش"""
         try:

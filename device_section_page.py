@@ -111,10 +111,10 @@ class DeviceSectionPage(ft.View):
             text_size=16,
             width=500
         )
-        # بازگردانی کامنت قبلی اگر وجود داشته باشه
-        saved_comment = form_data.get('comment')
-        if saved_comment:
-            self.comment_field.value = saved_comment
+        # # بازگردانی کامنت قبلی اگر وجود داشته باشه
+        # saved_comment = form_data.get('comment')
+        # if saved_comment:
+        #     self.comment_field.value = saved_comment
 
         # دکمه‌ها
         btn_back = ft.ElevatedButton(

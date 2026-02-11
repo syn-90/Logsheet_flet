@@ -15,13 +15,13 @@ class DevicePage(ft.View):
         self.SKY_BLUE = ft.Colors.BLUE_400
 
         self.DeviceList = [
-            'ES & SCADA', 'ES & SCADA-TEMP', 'Battery-COM', 'MV-COM', 'BUB BUC-COM',
-            'Inverter-COM', 'LV-COM', 'LV EMERGANCY-COM', 'BHT TRANS', 'DG',
+            'ES & SCADA', 'ES & SCADA-TEMP', 'Battery-COM', 'MV BUS BCA BCB', 'BUB BUC',
+            'Inverter 220vdc 220vac', 'LV BUS', 'LV EMERGANCY BUS BAR', 'BHT TRANS', 'DG',
             'FIN FAN SKID', 'OUTDOOR&INDOOR GAS SKID', 'Turbocompressor',
             'HYDR.SKID', 'LUBE OIL SKID', 'Gen.coolers', 'SLIP RING', 'AIR INTAKE',
-            'Fuse box', 'BBE BUS BAR', 'DC UPS', 'GATE WAY', 'CUN', 'BFE&BME',
+            'Fuse box', 'BBE BUS BAR', 'DC UPS', 'CUN', 'BFE&BME',
             'Battery ', 'Transformers', 'Electical Fire container',
-            'Diesel Pump Container', 'CONTAINAR', 'source'
+            'Diesel Pump Container', 'ROOM', 'CUN-P 01', 'Battery Room'
         ]
 
         # اینجا هیچ UI نساز! فقط متغیرها رو آماده کن
@@ -49,6 +49,7 @@ class DevicePage(ft.View):
             ),
             color=ft.Colors.WHITE12,
             margin=10
+            
         )
 
         device_title = ft.Text("Choose Device", size=24, weight=ft.FontWeight.BOLD, color=self.SKY_BLUE)

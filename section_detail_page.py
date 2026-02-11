@@ -1,4 +1,5 @@
 
+
 import flet as ft
 from device_sections_map import device_sections_map
 
@@ -57,19 +58,34 @@ class SectionDetailPage(ft.View):
 
     def prepare_fields_list(self, section_info):
         self.fields_data = []
+
         for fname, fdata in section_info.get('numeric_fields', {}).items():
-            rng = fdata.get('range', (None, None))
+            rng = fdata.get('range', None)
+
+            min_val = None
+            max_val = None
+
+            if isinstance(rng, (tuple, list)):
+                if len(rng) >= 1:
+                    min_val = rng[0]
+                if len(rng) >= 2:
+                    max_val = rng[1]
+            elif isinstance(rng, (int, float)):
+                min_val = rng
+
             self.fields_data.append({
                 'type': 'numeric',
                 'name': fname,
                 'unit': fdata.get('unit', ''),
-                'min': rng[0] if len(rng) == 2 else None,
-                'max': rng[1] if len(rng) == 2 else None,
+                'min': min_val,
+                'max': max_val,
                 'value': None
             })
 
         for fname, fdata in section_info.get('option_fields', {}).items():
-            normal = fdata.get('normal') or (fdata.get('options')[0] if fdata.get('options') else '')
+            normal = fdata.get('normal') or (
+                fdata.get('options')[0] if fdata.get('options') else ''
+            )
             self.fields_data.append({
                 'type': 'option',
                 'name': fname,
@@ -109,8 +125,17 @@ class SectionDetailPage(ft.View):
 
         # نمایش رنج مجاز (همیشه)
         range_hint = ""
-        if field['type'] == 'numeric' and field['min'] is not None and field['max'] is not None:
-            range_hint = f"Normal range: {field['min']} – {field['max']} {field['unit']}"
+        if field['type'] == 'numeric':
+            min_v = field.get('min')
+            max_v = field.get('max')
+
+            if min_v is not None and max_v is not None:
+                range_hint = f"Normal range: {min_v} – {max_v} {field['unit']}"
+            elif min_v is not None:
+                range_hint = f"Normal ≥ {min_v} {field['unit']}"
+            elif max_v is not None:
+                range_hint = f"Normal ≤ {max_v} {field['unit']}"
+
 
         range_display = ft.Text(range_hint, color=ft.Colors.CYAN_300, size=14, italic=True)
 
@@ -202,18 +227,24 @@ class SectionDetailPage(ft.View):
 
         try:
             value = float(value_text)
-            if field['min'] is not None and field['max'] is not None:
-                if field['min'] <= value <= field['max']:
-                    self.validation_error.value = "Within normal range"
-                    self.validation_error.color = ft.Colors.GREEN_400
-                    self.numeric_input.border_color = ft.Colors.GREEN_400
-                else:
-                    self.validation_error.value = f"Out of range ({field['min']}–{field['max']})"
-                    self.validation_error.color = ft.Colors.RED_ACCENT
-                    self.numeric_input.border_color = ft.Colors.RED_ACCENT
+            min_v = field.get('min')
+            max_v = field.get('max')
+
+            if min_v is not None and value < min_v:
+                self.validation_error.value = f"Below minimum ({min_v})"
+                self.validation_error.color = ft.Colors.RED_ACCENT
+                self.numeric_input.border_color = ft.Colors.RED_ACCENT
+
+            elif max_v is not None and value > max_v:
+                self.validation_error.value = f"Above maximum ({max_v})"
+                self.validation_error.color = ft.Colors.RED_ACCENT
+                self.numeric_input.border_color = ft.Colors.RED_ACCENT
+
             else:
-                self.validation_error.value = "Value entered"
-                self.validation_error.color = ft.Colors.GREY_400
+                self.validation_error.value = "Within normal range"
+                self.validation_error.color = ft.Colors.GREEN_400
+                self.numeric_input.border_color = ft.Colors.GREEN_400
+
         except ValueError:
             self.validation_error.value = "Invalid number"
             self.validation_error.color = ft.Colors.RED
@@ -233,7 +264,7 @@ class SectionDetailPage(ft.View):
             return
 
         if normal and selected != normal:
-            self.option_warning.value = f"Abnormal (Normal: {normal})"
+            self.option_warning.value = f"Unnormal (Normal: {normal})"
             self.option_warning.color = ft.Colors.ORANGE_ACCENT
         else:
             self.option_warning.value = "Normal"
