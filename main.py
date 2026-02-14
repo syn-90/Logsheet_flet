@@ -7,7 +7,7 @@ from section_detail_page import SectionDetailPage
 
 def main(page: ft.Page):
     page.title = "GT11 ELEC Form"
-    page.scroll = "auto"
+    page.scroll = ft.ScrollMode.AUTO
     page.bgcolor = ft.Colors.BLACK
     page.padding = 20
 

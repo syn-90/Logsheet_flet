@@ -95,46 +95,54 @@ class InformationPage(ft.View):
 
         # طراحی رسپانسیو صفحه
         self.controls = [
-            ft.Text("📋 GT11 ELEC Form", size=25, weight="bold",
-                    color=self.SKY_BLUE, col={"xs": 12}),
-            self.date_field,
+            ft.ResponsiveRow(
+                [
+                    ft.Text("📋 GT11 ELEC Form",
+                            size=25,
+                            weight="bold",
+                            color=self.SKY_BLUE,
+                            col={"xs": 12}),
 
-            ft.Container(
-                content=ft.Column([
-                    ft.Text("TIME *", color=self.SKY_BLUE),
-                    self.time_group
-                ]),
-                col={"xs": 12, "md": 6}
-            ),
+                    self.date_field,
 
-            ft.Container(
-                content=ft.Column([
-                    ft.Text("ATTENDING SHIFT *", color=self.SKY_BLUE),
-                    self.shift_group
-                ]),
-                col={"xs": 12, "md": 6}
-            ),
+                    ft.Container(
+                        content=ft.Column([
+                            ft.Text("TIME *", color=self.SKY_BLUE),
+                            self.time_group
+                        ]),
+                        col={"xs": 12, "md": 6}
+                    ),
 
-            ft.Container(
-                content=ft.Column([
-                    ft.Text("SHIFT ENGINEER *", color=self.SKY_BLUE),
-                    self.leader_group
-                ]),
-                col={"xs": 12, "md": 6}
-            ),
+                    ft.Container(
+                        content=ft.Column([
+                            ft.Text("ATTENDING SHIFT *", color=self.SKY_BLUE),
+                            self.shift_group
+                        ]),
+                        col={"xs": 12, "md": 6}
+                    ),
 
-            ft.Container(
-                content=ft.Column([
-                    ft.Text("SHIFT OPERATOR *", color=self.SKY_BLUE),
-                    self.eng_group
-                ]),
-                col={"xs": 12, "md": 6}
-            ),
+                    ft.Container(
+                        content=ft.Column([
+                            ft.Text("SHIFT ENGINEER *", color=self.SKY_BLUE),
+                            self.leader_group
+                        ]),
+                        col={"xs": 12, "md": 6}
+                    ),
 
-            ft.Container(
-                content=self.btn_next,
-                alignment=ft.alignment.center,
-                col={"xs": 12}
+                    ft.Container(
+                        content=ft.Column([
+                            ft.Text("SHIFT OPERATOR *", color=self.SKY_BLUE),
+                            self.eng_group
+                        ]),
+                        col={"xs": 12, "md": 6}
+                    ),
+
+                    ft.Container(
+                        content=self.btn_next,
+                        alignment=ft.alignment.center,
+                        col={"xs": 12}
+                    ),
+                ]
             )
         ]
 

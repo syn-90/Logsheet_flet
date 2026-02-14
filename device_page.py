@@ -91,7 +91,7 @@ class DevicePage(ft.View):
         ]
 
         # مهم: آپدیت صفحه بعد از تغییر controls
-        self.page.update()
+        self.update()
 
     def on_select(self, device_name):
         form_data = self.page.session.get("form_data") or {}
@@ -103,4 +103,4 @@ class DevicePage(ft.View):
         sb.open = True
 
         self.page.go("/sections")
-        self.page.update()  # حیاتی برای اندروید
+        self.update()  # حیاتی برای اندروید
