@@ -45,6 +45,6 @@ def main(page: ft.Page):
     page.go("/")   # <--- این خط باید آخر باشد!
 
 
-ft.app(target=main)
+ft.app(target=main, view=ft.AppView.FLET_APP)
 
 
