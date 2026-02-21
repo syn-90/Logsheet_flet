@@ -220,3 +220,4 @@ class DeviceSectionPage(ft.View):
         self.page.overlay.append(sb)
         sb.open = True
         self.page.update()
+        
