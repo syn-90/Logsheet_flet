@@ -3,7 +3,7 @@ from information_page import InformationPage
 from device_page import DevicePage
 from device_section_page import DeviceSectionPage
 from section_detail_page import SectionDetailPage
-
+import traceback
 
 def main(page: ft.Page):
     page.title = "GT11 ELEC Form"
@@ -18,18 +18,32 @@ def main(page: ft.Page):
     # ---------------------- ROUTING -------------------------
     def route_change(e: ft.RouteChangeEvent):
         page.views.clear()
+        try:
+            if page.route == "/" or page.route == "/information":
+                page.views.append(InformationPage(page))
 
-        if page.route == "/" or page.route == "/information":
-            page.views.append(InformationPage(page))
+            elif page.route == "/device":
+                page.views.append(DevicePage(page))
 
-        elif page.route == "/device":
-            page.views.append(DevicePage(page))
+            elif page.route == "/sections":
+                page.views.append(DeviceSectionPage(page))
 
-        elif page.route == "/sections":
-            page.views.append(DeviceSectionPage(page))
+            elif page.route == "/section_detail":
+                page.views.append(SectionDetailPage(page))
 
-        elif page.route == "/section_detail":
-            page.views.append(SectionDetailPage(page))
+        except Exception as err:
+            # نمایش خطای دقیق روی صفحه
+            page.views.clear()
+            page.views.append(
+                ft.View(
+                    "/error",
+                    controls=[
+                        ft.Text("❌ ERROR OCCURRED", color=ft.Colors.RED, size=20),
+                        ft.Text(str(err), color=ft.Colors.WHITE),
+                        ft.Text(traceback.format_exc(), color=ft.Colors.WHITE),
+                    ],
+                )
+            )
 
         page.update()
 
@@ -42,9 +56,23 @@ def main(page: ft.Page):
     page.on_route_change = route_change
     page.on_view_pop = view_pop
 
-    page.go("/")   # <--- این خط باید آخر باشد!
+    # Start app
+    try:
+        page.go("/")   # <--- حتما آخر باشد
+    except Exception as err:
+        page.views.clear()
+        page.views.append(
+            ft.View(
+                "/error",
+                controls=[
+                    ft.Text("❌ ERROR OCCURRED AT START", color=ft.Colors.RED, size=20),
+                    ft.Text(str(err), color=ft.Colors.WHITE),
+                    ft.Text(traceback.format_exc(), color=ft.Colors.WHITE),
+                ],
+            )
+        )
+        page.update()
 
 
-ft.app(target=main)
-
-
+if __name__ == "__main__":
+    ft.app(target=main)
