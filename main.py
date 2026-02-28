@@ -5,15 +5,23 @@ from device_section_page import DeviceSectionPage
 from section_detail_page import SectionDetailPage
 
 def main(page: ft.Page):
+    page.title = "GT11 ELEC Form"
+    page.scroll = "auto"
+    page.bgcolor = ft.Colors.BLACK
+    page.padding = 20
+
     try:
-        page.title = "GT11 ELEC Form"
-        page.scroll = "auto"
-        page.bgcolor = ft.Colors.BLACK
-        page.padding = 20
+        # ---------------------- SESSION امن -------------------------
+        # fallback برای نسخه‌های قدیمی Flet
+        if hasattr(page, "session") and hasattr(page.session, "get"):
+            if page.session.get("form_data") is None:
+                page.session.set("form_data", {})
+        else:
+            # fallback: استفاده از دیکشنری محلی
+            if not hasattr(page, "form_data"):
+                page.form_data = {}
 
-        if page.session.get("form_data") is None:
-            page.session.set("form_data", {})
-
+        # ---------------------- ROUTING -------------------------
         def route_change(e: ft.RouteChangeEvent):
             page.views.clear()
             if page.route == "/" or page.route == "/information":
@@ -26,6 +34,7 @@ def main(page: ft.Page):
                 page.views.append(SectionDetailPage(page))
             page.update()
 
+        # ---------------------- BACK BUTTON ---------------------
         def view_pop(e):
             if len(page.views) > 1:
                 page.views.pop()
@@ -33,11 +42,16 @@ def main(page: ft.Page):
 
         page.on_route_change = route_change
         page.on_view_pop = view_pop
-        page.go("/")
+
+        page.go("/")   # <--- این خط باید آخر باشد!
+
     except Exception as e:
         import traceback
-        page.add(ft.Text(f"Error: {e}", color=ft.Colors.RED))
-        page.add(ft.Text(traceback.format_exc(), color=ft.Colors.RED))
+        page.add(ft.Column([
+            ft.Text("⚠️ خطا رخ داده است:", color=ft.Colors.RED, size=20),
+            ft.Text(str(e), color=ft.Colors.RED),
+            ft.Text(traceback.format_exc(), color=ft.Colors.RED, selectable=True)
+        ]))
         page.update()
 
 ft.app(target=main)
