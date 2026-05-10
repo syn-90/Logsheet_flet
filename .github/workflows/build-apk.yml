@@ -17,13 +17,17 @@ jobs:
       - name: Install Flet
         run: |
           python -m pip install --upgrade pip
-          pip install flet
+          pip install flet openpyxl
 
       - name: Remove preinstalled Flutter
         run: rm -rf /opt/hostedtoolcache/flutter
 
       - name: Build APK
-        run: yes | flet build apk --verbose
+        run: |
+          mkdir -p assets
+          # کپی فایل اکسل به پوشه assets
+          cp "LOG SHEET 3.xlsx" assets/
+          yes | flet build apk --verbose --include-packages flet,openpyxl
 
       - uses: actions/upload-artifact@v4
         with:

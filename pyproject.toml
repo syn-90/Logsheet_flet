@@ -1,0 +1,12 @@
+[tool.flet]
+app_name = "GT11_ELEC_Form"
+package_name = "com.gt11.elecform"
+version = "1.0.0"
+description = "GT11 Electrical Form Application"
+
+[tool.flet.assets]
+path = "assets"
+include = ["*.xlsx"]
+
+[tool.flet.build]
+android_icon = "icon.png"

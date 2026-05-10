@@ -8,35 +8,32 @@ from openpyxl.utils import get_column_letter
 from openpyxl.cell.cell import MergedCell
 class ExcelHandler:
     def __init__(self, template_file='LOG SHEET 3.xlsx', save_dir='logs'):
-            import sys, os
-            import shutil
-
-            # مسیر واقعی فایل template در حالت exe یا py
+            # مسیر صحیح فایل template در حالت APK
             if getattr(sys, 'frozen', False):
-                base_path = sys._MEIPASS
+                # در حالت APK اجرا می‌شود
+                base_path = os.path.dirname(sys.executable)
+                # یا از مسیر assets استفاده کنید
+                if hasattr(sys, '_MEIPASS'):
+                    base_path = sys._MEIPASS
             else:
-                base_path = os.path.dirname(__file__)
-
+                # در حالت عادی پایتون
+                base_path = os.path.dirname(os.path.abspath(__file__))
+            
             self.template_file = os.path.join(base_path, template_file)
-
-            # تشخیص اندروید بدون استفاده از ft.platform
-            if os.path.exists("/storage/emulated/0/"):  # فقط روی اندروید وجود داره!
-                self.save_dir = "/storage/emulated/0/Documents/GT11_Logs"
+            
+            # مسیر ذخیره در اندروید
+            if os.path.exists('/storage/emulated/0/'):
+                self.save_dir = '/storage/emulated/0/Documents/GT11_Logs'
             else:
-                # دسکتاپ — همون رفتار قبلی
                 base_dir = os.path.join(os.path.expanduser('~'), 'Desktop')
-                self.save_dir = save_dir if save_dir else os.path.join(base_dir, 'logs')
-
+                self.save_dir = os.path.join(base_dir, save_dir)
+            
             os.makedirs(self.save_dir, exist_ok=True)
-
-            try:
-                src_template = os.path.join(os.path.dirname(__file__), 'templates', template_file)
-                dst_template = os.path.join(self.save_dir, template_file)
-
-                if os.path.exists(src_template) and not os.path.exists(dst_template):
-                    shutil.copy2(src_template, dst_template)
-            except Exception as e:
-                print("couldn't copy template:", e)
+            
+            # اطمینان از وجود فایل template
+            if not os.path.exists(self.template_file):
+                # اگر template نبود، یک فایل جدید ایجاد کن
+                print(f"⚠️ Template not found at {self.template_file}")
 
     def get_save_path(self):
         """ برمی‌گردونه مسیر فایل لاگ برای تاریخ امروز """

@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+build/
+dist/
+*.spec
+.DS_Store
+*.apk
+*.aab
+logs/
+!LOG SHEET 3.xlsx
+*.xlsx
+!LOG SHEET 3.xlsx
